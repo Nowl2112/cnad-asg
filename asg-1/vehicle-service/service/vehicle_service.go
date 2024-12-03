@@ -7,7 +7,7 @@ import (
 	"vehicle-service/model"
 )
 
-// DB instance (to be initialized in the main function)
+// DB instance 
 var db *sql.DB
 
 // Initialize the database connection
@@ -27,7 +27,7 @@ func InitDB(dsn string) error {
 	return nil
 }
 
-// AddVehicle adds a new vehicle to the database
+// AddVehicle 
 func AddVehicle(vehicle *model.Vehicle) error {
 	query := "INSERT INTO vehicles (license_plate, model, charge_level, cleanliness, available, location, cost) VALUES (?, ?, ?, ?, ?, ?, ?)"
 	result, err := db.Exec(query, vehicle.LicensePlate, vehicle.Model, vehicle.ChargeLevel, vehicle.Cleanliness, vehicle.Available, vehicle.Location, vehicle.Cost)
