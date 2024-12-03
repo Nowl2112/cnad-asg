@@ -20,9 +20,10 @@ CREATE TABLE vehicles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     license_plate VARCHAR(15) NOT NULL UNIQUE,
     model VARCHAR(255) NOT NULL,
-    charge_level DECIMAL(5, 2) NOT NULL COMMENT 'Battery charge level as a percentage',
+    charge_level DECIMAL(5, 2) NOT NULL,
     cleanliness ENUM('Clean', 'Moderate', 'Dirty') DEFAULT 'Clean',
     available BOOLEAN DEFAULT TRUE,
+    cost DECIMAL(5,2) not NULL, 
     location VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
