@@ -62,3 +62,33 @@ func GetReservation(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(reservation)
 }
+
+// CompleteReservation handles completing a reservation.
+func CompleteReservation(w http.ResponseWriter, r *http.Request) {
+    // Extract the reservation ID from the URL parameters
+    vars := mux.Vars(r)
+    idStr, ok := vars["id"]
+    if !ok {
+        http.Error(w, "Missing reservation ID in request", http.StatusBadRequest)
+        return
+    }
+
+    // Convert the ID from string to int
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        http.Error(w, "Invalid reservation ID format", http.StatusBadRequest)
+        return
+    }
+
+    // Call the service to complete the reservation
+    err = service.CompleteReservation(id)
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Error completing reservation: %v", err), http.StatusInternalServerError)
+        return
+    }
+
+    // Respond with a success message
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{"message": "Reservation completed successfully"})
+}

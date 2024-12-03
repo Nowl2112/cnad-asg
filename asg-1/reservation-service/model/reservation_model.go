@@ -1,11 +1,13 @@
 package model
-//reservation struct
+
+import "time"
+
 type Reservation struct{
-	ID			int		`json:"id"`
+	ID			int       `json:"id"`
 	UserID      int       `json:"user_id"`
 	VehicleID   int       `json:"vehicle_id"`
-	StartTime   string    `json:"start_time"`
-	EndTime     string    `json:"end_time"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
 	TotalPrice  float64   `json:"total_price"`
 	Status      string    `json:"status"`
 	CreatedAt   string    `json:"created_at"`
