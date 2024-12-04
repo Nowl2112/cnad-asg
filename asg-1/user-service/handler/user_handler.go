@@ -60,15 +60,20 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	valid, err := service.Login(credentials.Email, credentials.Password)
+	valid, user, err := service.Login(credentials.Email, credentials.Password)
 	if err != nil || !valid {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
+	// Respond with a success message and user ID
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful"})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Login successful",
+		"user_id": user.ID,  // Return the user_id to store in the frontend
+	})
 }
+
 
 // Update user
 func UpdateUser(w http.ResponseWriter, r *http.Request) {

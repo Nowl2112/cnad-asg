@@ -76,24 +76,24 @@ func GetUser(id int) (model.User, error) {
 	}
 	return user, nil
 }
-
-// Login user
-func Login(email, password string) (bool, error) {
+//login
+func Login(email, password string) (bool, model.User, error) {
 	var hashedPassword string
 	var user model.User
 	query := "SELECT id, email, password_hash, phone, membership_tier FROM users WHERE email = ?"
 	err := db.QueryRow(query, email).Scan(&user.ID, &user.Email, &hashedPassword, &user.Phone, &user.MembershipTier)
 	if err == sql.ErrNoRows {
-		return false, fmt.Errorf("invalid email or password")
+		return false, user, fmt.Errorf("invalid email or password")
 	} else if err != nil {
-		return false, fmt.Errorf("failed to retrieve user: %v", err)
+		return false, user, fmt.Errorf("failed to retrieve user: %v", err)
 	}
 	// Compare passwords
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
-		return false, fmt.Errorf("invalid email or password")
+		return false, user, fmt.Errorf("invalid email or password")
 	}
-	return true, nil
+
+	return true, user, nil  // Return the user details
 }
 
 // Update user
@@ -170,4 +170,16 @@ func sendVerificationEmail(email, token string) {
 	} else {
 		fmt.Println("Verification email sent successfully!")
 	}
+}
+// Get user by email
+func GetUserByEmail(email string) (model.User, error) {
+	var user model.User
+	query := "SELECT id, email, phone, membership_tier, created_at, updated_at FROM users WHERE email = ?"
+	err := db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Phone, &user.MembershipTier, &user.CreatedAt, &user.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return user, fmt.Errorf("user not found")
+	} else if err != nil {
+		return user, fmt.Errorf("failed to retrieve user: %v", err)
+	}
+	return user, nil
 }

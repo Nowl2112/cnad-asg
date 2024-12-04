@@ -7,7 +7,6 @@ import (
 	"reservation-service/model"
 	"reservation-service/service"
 	"strconv"
-	"time"
 	"github.com/gorilla/mux"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -93,40 +92,3 @@ func CompleteReservation(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(map[string]string{"message": "Reservation completed successfully"})
 }
 
-// GetAvailableVehicles 
-
-func CalculateReservationCostHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse the incoming request body into the EstimateRequest model
-	var request model.EstimateRequest
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	// Parse the start and end times from the request
-	startTime, err := time.Parse(time.RFC3339, request.StartTime)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid start time format: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	endTime, err := time.Parse(time.RFC3339, request.EndTime)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid end time format: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	// Call the service to calculate the estimated cost
-	totalCost, err := service.CalculateEstimatedCost(request.VehicleID, startTime, endTime)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to calculate cost: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Respond with the calculated total cost
-	response := model.EstimateResponse{TotalCost: totalCost}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-}

@@ -130,24 +130,3 @@ func GetReservation(id int) (*model.Reservation, error) {
 
 
 
-func CalculateEstimatedCost(vehicleID int, startTime, endTime time.Time) (float64, error) {
-	// Fetch the vehicle's cost per unit time (e.g., hourly rate)
-	var costPerUnit float64
-	query := "SELECT cost FROM vehicles WHERE id = ?"
-	err := db.QueryRow(query, vehicleID).Scan(&costPerUnit)
-	if err == sql.ErrNoRows {
-		return 0, fmt.Errorf("Vehicle not found")
-	} else if err != nil {
-		return 0, fmt.Errorf("Failed to retrieve vehicle cost: %v", err)
-	}
-
-	// Calculate the duration in hours
-	duration := endTime.Sub(startTime).Hours()
-	if duration < 0 {
-		return 0, fmt.Errorf("End time cannot be before start time")
-	}
-
-	// Calculate total cost
-	totalCost := costPerUnit * duration
-	return totalCost, nil
-}

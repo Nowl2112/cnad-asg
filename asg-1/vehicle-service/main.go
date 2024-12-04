@@ -19,10 +19,10 @@ func main() {
 	// Setup routes
 	router := mux.NewRouter()
 	router.HandleFunc("/vehicles", handler.AddVehicle).Methods("POST")
-	router.HandleFunc("/vehicles/{id}", handler.GetVehicle).Methods("GET")
-	router.HandleFunc("/vehicles/{id}", handler.UpdateVehicle).Methods("PUT")
-	router.HandleFunc("/vehicles/{id}", handler.DeleteVehicle).Methods("DELETE")
-	router.HandleFunc("/available", handler.GetAvailableVehicles).Methods("GET") 
+	router.HandleFunc("/vehicles/byID/{id}", handler.GetVehicle).Methods("GET")
+	router.HandleFunc("/vehicles/byID/{id}", handler.UpdateVehicle).Methods("PUT")
+	router.HandleFunc("/vehicles/byID/{id}", handler.DeleteVehicle).Methods("DELETE")
+	router.HandleFunc("/vehicles/available", handler.GetAvailableVehicles).Methods("GET") 
 	// Start server
 	fmt.Println("Vehicle service is running on port 8081")
 	log.Fatal(http.ListenAndServe(":8081", router))
