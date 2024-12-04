@@ -22,7 +22,6 @@ func main() {
 	router.HandleFunc("/vehicles/{id}", handler.GetVehicle).Methods("GET")
 	router.HandleFunc("/vehicles/{id}", handler.UpdateVehicle).Methods("PUT")
 	router.HandleFunc("/vehicles/{id}", handler.DeleteVehicle).Methods("DELETE")
-	router.HandleFunc("/available",handler.GetAvailable).Methods("GET")
 
 	// Start server
 	fmt.Println("Vehicle service is running on port 8081")

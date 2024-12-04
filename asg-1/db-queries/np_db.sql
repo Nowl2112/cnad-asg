@@ -22,7 +22,6 @@ CREATE TABLE vehicles (
     model VARCHAR(255) NOT NULL,
     charge_level DECIMAL(5, 2) NOT NULL,
     cleanliness ENUM('Clean', 'Moderate', 'Dirty') DEFAULT 'Clean',
-    available BOOLEAN DEFAULT TRUE,
     cost DECIMAL(5,2) not NULL, 
     location VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -30,17 +30,7 @@ func AddVehicle(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(vehicle)
 }
-//GetAvailable
-func GetAvailable(w http.ResponseWriter, r *http.Request) {
-	vehicles, err := service.GetAvailable()
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error retrieving available vehicles: %v", err), http.StatusInternalServerError)
-		return
-	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(vehicles)
-}
 // GetVehicle handler
 func GetVehicle(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)

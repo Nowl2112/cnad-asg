@@ -92,3 +92,37 @@ func CompleteReservation(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(map[string]string{"message": "Reservation completed successfully"})
 }
+
+// GetAvailableVehicles 
+func GetAvailableVehicles(w http.ResponseWriter, r *http.Request) {
+	// Define a struct to hold the request body data
+	type TimeRange struct {
+		StartTime string `json:"start_time"`
+		EndTime   string `json:"end_time"`
+	}
+
+	var timeRange TimeRange
+
+	// Decode the JSON payload from the request body.
+	if err := json.NewDecoder(r.Body).Decode(&timeRange); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Check if start_time and end_time are provided
+	if timeRange.StartTime == "" || timeRange.EndTime == "" {
+		http.Error(w, "start_time and end_time are required fields in the request body", http.StatusBadRequest)
+		return
+	}
+
+	// Call the service to get available vehicles based on the provided times
+	vehicles, err := service.GetAvailableVehicles(timeRange.StartTime, timeRange.EndTime)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error retrieving available vehicles: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with the available vehicles
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(vehicles)
+}

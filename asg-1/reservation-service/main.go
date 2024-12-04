@@ -23,6 +23,7 @@ func main() {
 	router.HandleFunc("/reservations", handler.AddReservation).Methods("POST")
 	router.HandleFunc("/reservations/{id}", handler.GetReservation).Methods("GET")
 	router.HandleFunc("/reservations/{id}/complete", handler.CompleteReservation).Methods("PUT")
+	router.HandleFunc("/vehicles/available", handler.GetAvailableVehicles).Methods("GET") 
 
 	// Start the server
 	fmt.Println("Reservation service is running on port 8082")
