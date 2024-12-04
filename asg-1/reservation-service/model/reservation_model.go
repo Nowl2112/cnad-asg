@@ -25,3 +25,13 @@ type Vehicle struct {
 	CreatedAt    string  `json:"created_at,omitempty"`
 	UpdatedAt    string  `json:"updated_at,omitempty"`
 }
+
+type EstimateRequest struct {
+	VehicleID int       `json:"vehicle_id"`
+	StartTime string    `json:"start_time"`
+	EndTime   string    `json:"end_time"`
+}
+
+type EstimateResponse struct {
+	TotalCost float64 `json:"total_cost"`
+}
