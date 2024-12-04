@@ -96,3 +96,44 @@ func CalculateEstimatedCost(vehicleID int, startTime, endTime time.Time) (float6
 	totalCost := costPerCar * duration
 	return totalCost, nil
 }
+
+func GetAvailableVehicles(startTime, endTime string) ([]model.Vehicle, error) {
+	if startTime == "" || endTime == "" {
+		return nil, fmt.Errorf("start_time and end_time must be provided")
+	}
+
+	query := `
+		SELECT id, license_plate, model, charge_level, cleanliness, location, cost
+		FROM vehicles 
+		WHERE id NOT IN (
+			SELECT vehicle_id 
+			FROM reservations 
+			WHERE status = 'active' 
+			  AND NOT (
+				  end_time <= ? OR start_time >= ?
+			  )
+		);
+	`
+
+	rows, err := db.Query(query, startTime, endTime)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to retrieve available vehicles: %v", err)
+	}
+	defer rows.Close()
+
+	var vehicles []model.Vehicle
+	for rows.Next() {
+		var vehicle model.Vehicle
+		// Adjust the Scan to match the fields in your Vehicle model
+		if err := rows.Scan(&vehicle.ID, &vehicle.LicensePlate, &vehicle.Model, &vehicle.ChargeLevel, &vehicle.Cleanliness, &vehicle.Location, &vehicle.Cost); err != nil {
+			return nil, fmt.Errorf("Error scanning vehicle row: %v", err)
+		}
+		vehicles = append(vehicles, vehicle)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("Error iterating through vehicle rows: %v", err)
+	}
+
+	return vehicles, nil
+}

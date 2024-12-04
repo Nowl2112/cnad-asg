@@ -1,23 +1,31 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	"user-service/handler"
-	"user-service/service"
-	"github.com/gorilla/mux"
+    "log"
+    "net/http"
+    "user-service/handler"
+    "user-service/service"
+
+    "github.com/gorilla/mux"
 )
 
 func main() {
-	service.InitDB()
+    // Initialize the database
+    dsn := "user:Momo9119!@tcp(localhost:3306)/np_db"
+    service.InitDB(dsn)
 
-	router := mux.NewRouter()
-	router.HandleFunc("/users/register", handler.RegisterUser).Methods("POST")
-	router.HandleFunc("/users/{id}", handler.GetUser).Methods("GET")
-	router.HandleFunc("/users/login", handler.Login).Methods("POST")
-	router.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PUT")
-	router.HandleFunc("/users/{id}/history", handler.GetRentalHistory).Methods("GET")
+    // Set up the router
+    router := mux.NewRouter()
 
-	log.Println("Starting server on :8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+    // Define routes
+    router.HandleFunc("/users/register", handler.RegisterUser).Methods("POST")
+    router.HandleFunc("/users/login", handler.Login).Methods("POST")
+    router.HandleFunc("/user/{id}", handler.GetUser).Methods("GET")
+    router.HandleFunc("/user/{id}", handler.UpdateUser).Methods("PUT")
+    router.HandleFunc("/user/{id}/rental-history", handler.GetRentalHistory).Methods("GET")
+    router.HandleFunc("/verify", handler.VerifyEmail).Methods("GET")
+
+    // Start the server
+    log.Println("Server running on port 8080...")
+    log.Fatal(http.ListenAndServe(":8080", router))
 }

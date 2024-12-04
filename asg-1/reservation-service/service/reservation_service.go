@@ -104,58 +104,31 @@ func CompleteReservation(reservationID int) error {
 
 // GetReservation retrieves a reservation by ID
 func GetReservation(id int) (*model.Reservation, error) {
-	var reservation model.Reservation
-	query := "SELECT id, user_id, vehicle_id, start_time, end_time, total_price, status, created_at, updated_at FROM reservations WHERE id = ?"
+    var reservation model.Reservation
+    query := "SELECT id, user_id, vehicle_id, start_time, end_time, total_price, status, created_at, updated_at FROM reservations WHERE id = ?"
 
-	err := db.QueryRow(query, id).Scan(&reservation.ID, &reservation.UserID, &reservation.VehicleID, &reservation.StartTime, &reservation.EndTime, &reservation.TotalPrice, &reservation.Status, &reservation.CreatedAt, &reservation.UpdatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to retrieve reservation: %v", err)
-	}
+    var startTime []byte
+    var endTime []byte
+    err := db.QueryRow(query, id).Scan(&reservation.ID, &reservation.UserID, &reservation.VehicleID, &startTime, &endTime, &reservation.TotalPrice, &reservation.Status, &reservation.CreatedAt, &reservation.UpdatedAt)
+    if err != nil {
+        return nil, fmt.Errorf("Failed to retrieve reservation: %v", err)
+    }
 
-	return &reservation, nil
+    // Convert byte slices to time.Time
+    reservation.StartTime, err = time.Parse("2006-01-02 15:04:05", string(startTime))
+    if err != nil {
+        return nil, fmt.Errorf("Failed to parse start_time: %v", err)
+    }
+
+    reservation.EndTime, err = time.Parse("2006-01-02 15:04:05", string(endTime))
+    if err != nil {
+        return nil, fmt.Errorf("Failed to parse end_time: %v", err)
+    }
+
+    return &reservation, nil
 }
 
 
-func GetAvailableVehicles(startTime, endTime string) ([]model.Vehicle, error) {
-	if startTime == "" || endTime == "" {
-		return nil, fmt.Errorf("start_time and end_time must be provided")
-	}
-
-	query := `
-		SELECT id, license_plate, model, charge_level, cleanliness, location, cost
-		FROM vehicles 
-		WHERE id NOT IN (
-			SELECT vehicle_id 
-			FROM reservations 
-			WHERE status = 'active' 
-			  AND NOT (
-				  end_time <= ? OR start_time >= ?
-			  )
-		);
-	`
-
-	rows, err := db.Query(query, startTime, endTime)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to retrieve available vehicles: %v", err)
-	}
-	defer rows.Close()
-
-	var vehicles []model.Vehicle
-	for rows.Next() {
-		var vehicle model.Vehicle
-		// Adjust the Scan to match the fields in your Vehicle model
-		if err := rows.Scan(&vehicle.ID, &vehicle.LicensePlate, &vehicle.Model, &vehicle.ChargeLevel, &vehicle.Cleanliness, &vehicle.Location, &vehicle.Cost); err != nil {
-			return nil, fmt.Errorf("Error scanning vehicle row: %v", err)
-		}
-		vehicles = append(vehicles, vehicle)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("Error iterating through vehicle rows: %v", err)
-	}
-
-	return vehicles, nil
-}
 
 func CalculateEstimatedCost(vehicleID int, startTime, endTime time.Time) (float64, error) {
 	// Fetch the vehicle's cost per unit time (e.g., hourly rate)

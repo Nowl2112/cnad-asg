@@ -11,24 +11,22 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 )
-
-// Register new user
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
-	var user model.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
+    var user model.User
+    if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        return
+    }
 
-	createdUser, err := service.RegisterUser(user)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to register user: %v", err), http.StatusInternalServerError)
-		return
-	}
+    createdUser, err := service.RegisterUser(user)
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Failed to register user: %v", err), http.StatusInternalServerError)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(createdUser)
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(createdUser)
 }
 
 // Get user by ID
@@ -116,4 +114,32 @@ func GetRentalHistory(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(rentals)
+}
+
+func VerifyEmail(w http.ResponseWriter, r *http.Request) {
+    token := r.URL.Query().Get("token")
+    if token == "" {
+        http.Error(w, "Invalid verification token", http.StatusBadRequest)
+        return
+    }
+
+    db := service.GetDB() // Get the database connection from the service package
+
+    query := `UPDATE users 
+              SET is_verified = true, verification_token = NULL, token_expiry = NULL 
+              WHERE verification_token = ? AND token_expiry > NOW()`
+    result, err := db.Exec(query, token)
+    if err != nil {
+        http.Error(w, "Failed to verify email", http.StatusInternalServerError)
+        return
+    }
+
+    rowsAffected, _ := result.RowsAffected()
+    if rowsAffected == 0 {
+        http.Error(w, "Invalid or expired token", http.StatusBadRequest)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"message": "Email verified successfully"})
 }

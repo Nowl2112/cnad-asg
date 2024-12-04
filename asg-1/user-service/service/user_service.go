@@ -4,27 +4,34 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-
 	"golang.org/x/crypto/bcrypt"
 	"user-service/model"
+	"crypto/rand"
+	"encoding/hex"
+	"time"
+	"net/smtp"
 )
 
 var db *sql.DB
 
-// Initialize the DB connection
-func InitDB() {
-	var err error
-	dsn := "user:Momo9119!@tcp(localhost:3306)/np_db"
-	db, err = sql.Open("mysql", dsn)
-	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
-	}
-	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
-	}
-	fmt.Println("Database connected!")
+
+// InitDB initializes the database connection
+func InitDB(dsn string) {
+    var err error
+    db, err = sql.Open("mysql", dsn)
+    if err != nil {
+        log.Fatalf("Failed to connect to database: %v", err)
+    }
+    if err := db.Ping(); err != nil {
+        log.Fatalf("Failed to ping database: %v", err)
+    }
+    fmt.Println("Database connected!")
 }
 
+// GetDB returns the database connection
+func GetDB() *sql.DB {
+    return db
+}
 // Register new user
 func RegisterUser(user model.User) (model.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
@@ -32,15 +39,27 @@ func RegisterUser(user model.User) (model.User, error) {
 		return user, fmt.Errorf("failed to hash password: %v", err)
 	}
 
-	query := "INSERT INTO users (email, password_hash, phone, membership_tier) VALUES (?, ?, ?, ?)"
-	result, err := db.Exec(query, user.Email, hashedPassword, user.Phone, user.MembershipTier)
+	token, err := GenerateToken()
+	if err != nil {
+		return user, fmt.Errorf("failed to generate verification token: %v", err)
+	}
+
+	expiry := time.Now().Add(24 * time.Hour) // Token valid for 24 hours
+
+	query := `INSERT INTO users (email, password_hash, phone, membership_tier, verification_token, token_expiry)
+	          VALUES (?, ?, ?, ?, ?, ?)`
+	result, err := db.Exec(query, user.Email, hashedPassword, user.Phone, user.MembershipTier, token, expiry)
 	if err != nil {
 		return user, fmt.Errorf("failed to register user: %v", err)
 	}
 
 	userID, _ := result.LastInsertId()
 	user.ID = int(userID)
-	user.Password = "" // Do not return the password
+	user.VerificationToken = token
+	user.TokenExpiry = expiry.Format("2006-01-02 15:04:05")
+
+	// Send verification email
+	go sendVerificationEmail(user.Email, token)
 
 	return user, nil
 }
@@ -69,7 +88,6 @@ func Login(email, password string) (bool, error) {
 	} else if err != nil {
 		return false, fmt.Errorf("failed to retrieve user: %v", err)
 	}
-
 	// Compare passwords
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
@@ -118,4 +136,38 @@ func GetRentalHistory(userID int) ([]model.Reservation, error) {
 	}
 
 	return reservations, nil
+}
+
+
+// GenerateToken creates a random token
+func GenerateToken() (string, error) {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+// Register new user with email verification
+
+func sendVerificationEmail(email, token string) {
+	// Configure your SMTP settings
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+	username := "kotaro.da.kat@gmail.com" // Your Gmail address
+	password := "mkin ajob zriq oifi"      // Your App Password (NOT your Gmail account password)
+
+	// Create the email message
+	from := username // Use the authenticated username as the sender
+	subject := "Email Verification"
+	body := fmt.Sprintf("Please verify your email by clicking the link: http://localhost:8080/verify?token=%s", token)
+	msg := fmt.Sprintf("From: %s\nTo: %s\nSubject: %s\n\n%s", from, email, subject, body)
+
+	// Send the email
+	auth := smtp.PlainAuth("", username, password, smtpHost)
+	if err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, []string{email}, []byte(msg)); err != nil {
+		fmt.Printf("Failed to send email: %v\n", err)
+	} else {
+		fmt.Println("Verification email sent successfully!")
+	}
 }

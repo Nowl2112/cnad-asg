@@ -57,3 +57,7 @@ CREATE TABLE payments (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+
+ALTER TABLE users
+ADD COLUMN verification_token VARCHAR(255),
+ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;

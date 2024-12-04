@@ -7,9 +7,13 @@ type User struct {
 	Password       string `json:"password,omitempty"`
 	Phone          string `json:"phone"`
 	MembershipTier string `json:"membership_tier"`
+	IsVerified     bool   `json:"is_verified"`
 	CreatedAt      string `json:"created_at,omitempty"`
 	UpdatedAt      string `json:"updated_at,omitempty"`
+	VerificationToken string `json:"-"`
+	TokenExpiry    string `json:"-"`
 }
+
 
 // Reservation struct
 type Reservation struct {
