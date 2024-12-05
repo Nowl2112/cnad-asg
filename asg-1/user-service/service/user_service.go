@@ -112,31 +112,43 @@ func UpdateUser(id int, user model.User) error {
 	return nil
 }
 
-// Get rental history
-func GetRentalHistory(userID int) ([]model.Reservation, error) {
-	var reservations []model.Reservation
-	query := `SELECT r.id, r.user_id, r.vehicle_id, r.start_time, r.end_time, r.total_price, r.status, r.created_at, r.updated_at
-	          FROM reservations r
-	          WHERE r.user_id = ? AND r.end_time < NOW()` // Only past reservations
 
-	rows, err := db.Query(query, userID)
-	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("no past reservations found for this user")
-	} else if err != nil {
-		return nil, fmt.Errorf("failed to retrieve rental history: %v", err)
-	}
-	defer rows.Close()
+// GetRentalHistoryWithVehicle 
+func GetRentalHistoryWithVehicle(userID int) ([]map[string]interface{}, error) {
+    query := `
+        SELECT r.start_time, r.end_time, r.total_price, v.license_plate
+        FROM reservations r
+        INNER JOIN vehicles v ON r.vehicle_id = v.id
+        WHERE r.user_id = ? AND r.end_time < NOW()`
+    
+    rows, err := db.Query(query, userID)
+    if err == sql.ErrNoRows {
+        return nil, fmt.Errorf("no rental history found for user")
+    } else if err != nil {
+        return nil, fmt.Errorf("failed to fetch rental history: %v", err)
+    }
+    defer rows.Close()
 
-	for rows.Next() {
-		var reservation model.Reservation
-		if err := rows.Scan(&reservation.ID, &reservation.UserID, &reservation.VehicleID, &reservation.StartTime, &reservation.EndTime, &reservation.TotalPrice, &reservation.Status, &reservation.CreatedAt, &reservation.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("failed to scan reservation: %v", err)
-		}
-		reservations = append(reservations, reservation)
-	}
+    var history []map[string]interface{}
+    for rows.Next() {
+        var startTime, endTime, carPlate string
+        var totalPrice float64
 
-	return reservations, nil
+        if err := rows.Scan(&startTime, &endTime, &totalPrice, &carPlate); err != nil {
+            return nil, fmt.Errorf("failed to scan rental history: %v", err)
+        }
+
+        history = append(history, map[string]interface{}{
+            "carPlate":   carPlate,
+            "startTime":  startTime,
+            "endTime":    endTime,
+            "totalPrice": totalPrice,
+        })
+    }
+
+    return history, nil
 }
+
 
 
 // GenerateToken creates a random token

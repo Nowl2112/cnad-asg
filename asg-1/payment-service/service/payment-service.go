@@ -44,50 +44,6 @@ func InitDB(dsn string) error {
 
 
 
-func CalculateEstimatedCost(vehicleID, userID int, startTime, endTime time.Time) (float64, error) {
-	// Fetch the vehicle's cost per unit time (e.g., hourly rate)
-	var costPerUnit float64
-	query := "SELECT cost FROM vehicles WHERE id = ?"
-	err := db.QueryRow(query, vehicleID).Scan(&costPerUnit)
-	if err == sql.ErrNoRows {
-		return 0, fmt.Errorf("Vehicle not found")
-	} else if err != nil {
-		return 0, fmt.Errorf("Failed to retrieve vehicle cost: %v", err)
-	}
-
-	// Fetch the user's membership tier
-	var membershipTier string
-	query = "SELECT membership_tier FROM users WHERE id = ?"
-	err = db.QueryRow(query, userID).Scan(&membershipTier)
-	if err == sql.ErrNoRows {
-		return 0, fmt.Errorf("User not found")
-	} else if err != nil {
-		return 0, fmt.Errorf("Failed to retrieve user membership tier: %v", err)
-	}
-
-	// Calculate the duration in hours
-	duration := endTime.Sub(startTime).Hours()
-	if duration < 0 {
-		return 0, fmt.Errorf("End time cannot be before start time")
-	}
-
-	// Calculate total cost before discount
-	totalCost := costPerUnit * duration
-
-	// Apply discount based on membership tier
-	switch membershipTier {
-	case "basic":
-		// No discount
-	case "premium":
-		totalCost *= 0.90 // 10% discount
-	case "vip":
-		totalCost *= 0.75 // 25% discount
-	default:
-		return 0, fmt.Errorf("Unknown membership tier: %s", membershipTier)
-	}
-
-	return totalCost, nil
-}
 
 func init() {
 	stripe.Key = os.Getenv("sk_test_51QSOXHE4kxPn6gfJSMF4SSpbJBv9mRvFav8ePrgPrRONLYQFLDYS178QEZirawSIDzU5zP8DLDwiRIK3FunuG4Po00rSE7EfRx")

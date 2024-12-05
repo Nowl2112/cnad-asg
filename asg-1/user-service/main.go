@@ -22,7 +22,7 @@ func main() {
 	router.HandleFunc("/users/login", handler.Login).Methods("POST")
 	router.HandleFunc("/user/{id}", handler.GetUser).Methods("GET")
 	router.HandleFunc("/user/{id}", handler.UpdateUser).Methods("PUT")
-	router.HandleFunc("/user/{id}/rental-history", handler.GetRentalHistory).Methods("GET")
+	router.HandleFunc("/rental-history/{id}", handler.GetRentalHistoryHandler).Methods("GET")
 	router.HandleFunc("/verify", handler.VerifyEmail).Methods("GET")
 
 	// Add CORS headers

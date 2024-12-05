@@ -4,56 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"payment-service/model"
 	"payment-service/service"
-	"time"
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func CalculateReservationCostHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse the incoming request body into the EstimateRequest model
-	var request model.EstimateRequest
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
-		return
-	}
 
-	// Validate request fields
-	if request.VehicleID == 0 || request.UserID == 0 {
-		http.Error(w, "Missing vehicle_id or user_id in request", http.StatusBadRequest)
-		return
-	}
-
-	// Parse the start and end times from the request
-	startTime, err := time.Parse(time.RFC3339, request.StartTime)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid start time format: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	endTime, err := time.Parse(time.RFC3339, request.EndTime)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid end time format: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	// Call the service to calculate the estimated cost
-	totalCost, err := service.CalculateEstimatedCost(request.VehicleID, request.UserID, startTime, endTime)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to calculate cost: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Respond with the calculated total cost
-	response := model.EstimateResponse{TotalCost: totalCost}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to write response: %v", err), http.StatusInternalServerError)
-	}
-}
 
 
 func HandleCreatePaymentIntent(w http.ResponseWriter, r *http.Request) {

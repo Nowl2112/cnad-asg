@@ -4,17 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/profile_style.css">
 </head>
 <body>
     <div class="profile-container">
         <h1>Your Profile</h1>
         <form id="profileForm">
             <input type="text" id="email" placeholder="Email" readonly />
-            <input type="text" id="phone" placeholder="Phone Number" required />
-            <button type="submit">Update Profile</button>
+            <input type="text" id="phone" placeholder="Phone Number" readonly />
+            <input type="text" id="membership_tier" placeholder="Membership Tier" readonly />
+            <button type="button" id="editProfile">Edit Profile</button>
         </form>
+
+        <div id="rentalHistorySection">
+            <button id="viewHistory">View Rental History</button>
+            <div id="rentalHistoryList" class="scrollable">
+            </div>
+        </div>
     </div>
+
+    <!-- Pop-up for editing profile -->
+    <div id="editProfilePopup" class="popup">
+        <div class="popup-content">
+            <span class="close-btn">&times;</span>
+            <h2>Edit Profile</h2>
+            <form id="editProfileForm">
+                <input type="text" id="newEmail" placeholder="New Email" required />
+                <input type="text" id="newPhone" placeholder="New Phone Number" required />
+                <input type="password" id="newPassword" placeholder="New Password" required />
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
     <script src="js/profile.js"></script>
 </body>
 </html>

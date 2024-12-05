@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"strconv"
 	_ "github.com/go-sql-driver/mysql"
-
 )
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
     var user model.User
@@ -101,25 +100,24 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "User updated successfully"})
 }
 
-// Get rental history
-func GetRentalHistory(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	idStr := params["id"]
-	id, err := strconv.Atoi(idStr) // Convert string ID to int
-	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
-	}
+func GetRentalHistoryHandler(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+    userID, err := strconv.Atoi(params["id"]) // Use mux.Vars
+    if err != nil {
+        http.Error(w, "Invalid user ID", http.StatusBadRequest)
+        return
+    }
 
-	rentals, err := service.GetRentalHistory(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
+    history, err := service.GetRentalHistoryWithVehicle(userID)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(rentals)
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(history)
 }
+
 
 func VerifyEmail(w http.ResponseWriter, r *http.Request) {
     token := r.URL.Query().Get("token")

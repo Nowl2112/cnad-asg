@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservation Page</title>
+</head>
+<body>
+  <h1>Vehicle Reservation</h1>
+  <form id="reservationForm">
+    <label for="startTime">Start Time:</label>
+    <input type="datetime-local" id="startTime" name="startTime" required><br><br>
+
+    <label for="endTime">End Time:</label>
+    <input type="datetime-local" id="endTime" name="endTime" required><br><br>
+
+    <button type="submit">Search Vehicles</button>
+  </form>
+
+  <div id="vehiclesList">
+    <h2>Available Vehicles</h2>
+    <ul id="vehicleResults"></ul>
+  </div>
+
+  <script>
+    document.getElementById('reservationForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const startTime = document.getElementById('startTime').value;
+      const endTime = document.getElementById('endTime').value;
+      
+      if (!startTime || !endTime) {
+        alert('Both start time and end time are required!');
+        return;
+      }
+
+      const vehicles = await getAvailableVehicles(startTime, endTime);
+      displayVehicles(vehicles);
+    });
+
+    function getAvailableVehicles(startTime, endTime) {
+  // Create an object to represent the time range
+  const timeRange = {
+    start_time: startTime,
+    end_time: endTime
+  };
+
+  // Send a POST request with the time range as the JSON body
+  return fetch('http://localhost:8081/vehicles/available', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(timeRange) // Send the time range as a JSON body
+  })
+  .then(response => response.json())  // Parse the JSON response
+  .then(vehicles => {
+    // Ensure vehicles is an array
+    if (Array.isArray(vehicles)) {
+      console.log(vehicles);  // Example: log the list of available vehicles
+      return vehicles;
+    } else {
+      console.error('Invalid response format:', vehicles);
+      return []; // Return an empty array if the response is invalid
+    }
+  })
+  .catch(error => {
+    // Handle any errors here
+    console.error('Error:', error);
+    return []; // Return an empty array in case of error
+  });
+}
+
+function displayVehicles(vehicles) {
+  const vehicleList = document.getElementById('vehicleResults');
+  vehicleList.innerHTML = '';
+
+  if (vehicles.length === 0) {
+    vehicleList.innerHTML = '<li>No available vehicles found.</li>';
+  } else {
+    vehicles.forEach(vehicle => {
+      const listItem = document.createElement('li');
+      listItem.innerHTML = `
+        Vehicle model:${vehicle.model} - Plate Number: ${vehicle.license_plate} - Cost: $${vehicle.cost}
+        <button onclick="reserveVehicle(${vehicle.id})">Reserve</button>
+      `;
+      vehicleList.appendChild(listItem);
+    });
+  }
+}
+
+  </script>
+</body>
+</html>
