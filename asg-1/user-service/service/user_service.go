@@ -116,10 +116,10 @@ func UpdateUser(id int, user model.User) error {
 // GetRentalHistoryWithVehicle 
 func GetRentalHistoryWithVehicle(userID int) ([]map[string]interface{}, error) {
     query := `
-        SELECT r.start_time, r.end_time, r.total_price, v.license_plate, r.status
+        SELECT r.id, r.start_time, r.end_time, r.total_price, v.license_plate, r.status
         FROM reservations r
         INNER JOIN vehicles v ON r.vehicle_id = v.id
-        WHERE r.user_id = ? AND r.end_time < NOW()`
+        WHERE r.user_id = ? `
     
     rows, err := db.Query(query, userID)
     if err == sql.ErrNoRows {
@@ -131,14 +131,16 @@ func GetRentalHistoryWithVehicle(userID int) ([]map[string]interface{}, error) {
 
     var history []map[string]interface{}
     for rows.Next() {
+		var id int64
         var startTime, endTime, carPlate, status string
         var totalPrice float64
 
-        if err := rows.Scan(&startTime, &endTime, &totalPrice, &carPlate, &status); err != nil {
+        if err := rows.Scan(&id, &startTime, &endTime, &totalPrice, &carPlate, &status); err != nil {
             return nil, fmt.Errorf("failed to scan rental history: %v", err)
         }
 
         history = append(history, map[string]interface{}{
+			"id":id,
             "carPlate":   carPlate,
             "startTime":  startTime,
             "endTime":    endTime,

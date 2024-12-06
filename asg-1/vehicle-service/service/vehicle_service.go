@@ -30,8 +30,8 @@ func InitDB(dsn string) error {
 
 // AddVehicle 
 func AddVehicle(vehicle *model.Vehicle) error {
-	query := "INSERT INTO vehicles (license_plate, model, charge_level, cleanliness,location, cost) VALUES (?, ?, ?, ?, ?, ?)"
-	result, err := db.Exec(query, vehicle.LicensePlate, vehicle.Model, vehicle.ChargeLevel, vehicle.Cleanliness,  vehicle.Location, vehicle.Cost)
+	query := "INSERT INTO vehicles (license_plate, model, charge_level, cleanliness, location, cost) VALUES (?, ?, ?, ?, ?, ?)"
+	result, err := db.Exec(query, vehicle.LicensePlate, vehicle.Model, vehicle.ChargeLevel, vehicle.Cleanliness, vehicle.Location, vehicle.Cost)
 	if err != nil {
 		return fmt.Errorf("Failed to add vehicle: %v", err)
 	}
@@ -41,17 +41,21 @@ func AddVehicle(vehicle *model.Vehicle) error {
 	return nil
 }
 
-
 // GetVehicle retrieves a vehicle by ID
 func GetVehicle(id int) (*model.Vehicle, error) {
 	var vehicle model.Vehicle
-	query := "SELECT id, license_plate, model, charge_level, cleanliness,location, cost, created_at, updated_at FROM vehicles WHERE id = ?"
+	query := "SELECT id, license_plate, model, charge_level, cleanliness, location, cost, created_at, updated_at FROM vehicles WHERE id = ?"
 	err := db.QueryRow(query, id).Scan(&vehicle.ID, &vehicle.LicensePlate, &vehicle.Model, &vehicle.ChargeLevel, &vehicle.Cleanliness, &vehicle.Location, &vehicle.Cost, &vehicle.CreatedAt, &vehicle.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("Vehicle not found")
 	} else if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve vehicle: %v", err)
 	}
+
+	// Convert time to local time
+	vehicle.CreatedAt = vehicle.CreatedAt.In(time.Local)
+	vehicle.UpdatedAt = vehicle.UpdatedAt.In(time.Local)
+
 	return &vehicle, nil
 }
 
@@ -102,6 +106,17 @@ func GetAvailableVehicles(startTime, endTime string) ([]model.Vehicle, error) {
 		return nil, fmt.Errorf("start_time and end_time must be provided")
 	}
 
+	// Convert startTime and endTime to time.Time (local time)
+	start, err := time.ParseInLocation("2006-01-02 15:04:05", startTime, time.Local)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid start_time format: %v", err)
+	}
+
+	end, err := time.ParseInLocation("2006-01-02 15:04:05", endTime, time.Local)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid end_time format: %v", err)
+	}
+
 	query := `
 		SELECT id, license_plate, model, charge_level, cleanliness, location, cost
 		FROM vehicles 
@@ -115,7 +130,7 @@ func GetAvailableVehicles(startTime, endTime string) ([]model.Vehicle, error) {
 		);
 	`
 
-	rows, err := db.Query(query, startTime, endTime)
+	rows, err := db.Query(query, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve available vehicles: %v", err)
 	}

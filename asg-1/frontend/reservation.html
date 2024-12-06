@@ -18,9 +18,25 @@
     <p>Cost per Hour: $<span id="costPerHour"></span></p>
     <p>Total Estimated Cost: $<span id="totalCost"></span></p>
   </div>
-<button id="confirmReservation">Confirm Reservation</button>
+  <button id="confirmReservation">Confirm Reservation</button>
 
   <script>
+    // Function to convert Date to local ISO format "YYYY-MM-DDTHH:MM:SS" without changing to UTC
+function formatLocalTime(dateTimeLocal) {
+  const localTime = new Date(dateTimeLocal);
+  
+  // Manually construct the ISO format string based on local time
+  const year = localTime.getFullYear();
+  const month = String(localTime.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+  const day = String(localTime.getDate()).padStart(2, '0');
+  const hours = String(localTime.getHours()).padStart(2, '0');
+  const minutes = String(localTime.getMinutes()).padStart(2, '0');
+  const seconds = String(localTime.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`;
+}
+
+
     document.addEventListener('DOMContentLoaded', async () => {
       // Extract URL parameters
       const params = new URLSearchParams(window.location.search);
@@ -35,17 +51,13 @@
         return;
       }
 
-      // Display reservation times
-      document.getElementById('startTime').textContent = new Date(startTime).toLocaleString();
-      document.getElementById('endTime').textContent = new Date(endTime).toLocaleString();
+      // Display reservation times in local format
+      document.getElementById('startTime').textContent = formatLocalTime(startTime);
+      document.getElementById('endTime').textContent = formatLocalTime(endTime);
 
-      // Format times for sending in request
-      const formattedStart = new Date(startTime).toISOString();
-      const formattedEnd = new Date(endTime).toISOString();
-  
-      const formattedStart2= new Date(formattedStart).toISOString().replace('.000Z', 'Z');
-      const formattedEnd2= new Date(formattedEnd).toISOString().replace('.000Z', 'Z');
-    
+      // Format times for sending in request (local time, no UTC conversion)
+      const formattedStart = formatLocalTime(startTime);
+      const formattedEnd = formatLocalTime(endTime);
 
       // Convert user_id and vehicle_id to integers
       const vehicleIdInt = parseInt(vehicleId, 10); // Convert to integer
@@ -56,17 +68,17 @@
       document.getElementById('vehicleInfo').textContent = `Model: ${vehicle.model}, License Plate: ${vehicle.license_plate}`;
       document.getElementById('costPerHour').textContent = vehicle.cost;
 
-      // Convert times to Unix timestamps for estimation
-      const startUnix = new Date(startTime).getTime() / 1000;  // Convert to Unix timestamp
-      const endUnix = new Date(endTime).getTime() / 1000;  // Convert to Unix timestamp
+      // Convert times to Unix timestamps for cost estimation
+      const startUnix = new Date(startTime).getTime() / 1000;
+      const endUnix = new Date(endTime).getTime() / 1000;
 
       // Estimate total cost based on the reservation
       const totalCost = await fetch('http://localhost:8082/reservations/estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          vehicle_id: vehicleIdInt,  // Send as integer
-          user_id: userIdInt,        // Send as integer
+          vehicle_id: vehicleIdInt,  
+          user_id: userIdInt,        
           start_time: startUnix,
           end_time: endUnix
         })
@@ -78,11 +90,13 @@
       // Confirm reservation on button click
       document.getElementById('confirmReservation').addEventListener('click', async () => {
         const reservation = {
-          user_id: userIdInt,  // Send as integer
-          vehicle_id: vehicleIdInt,  // Send as integer
-          start_time: formattedStart2,
-          end_time: formattedEnd2
-        };
+      user_id: userIdInt,  
+      vehicle_id: vehicleIdInt,  
+      start_time: formattedStart, // Send as local time string
+      end_time: formattedEnd, // Send as local time string
+      total_price: totalCost.total_cost,  // Add total price to the payload
+      status: "active"  // Set status to "active"
+    };
 
         await fetch('http://localhost:8082/reservations', {
           method: 'POST',
@@ -90,8 +104,7 @@
           body: JSON.stringify(reservation)
         });
 
-        alert('Reservation confirmed!');
-        window.location.href = 'homepage.html'; // Redirect back to homepage
+        //window.location.href = 'homepage.html'; // Redirect back to homepage
       });
     });
   </script>

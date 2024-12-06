@@ -7,7 +7,7 @@
 </head>
 <body>
   <header>
-    <a href="profile.html">profile</a>
+    <a href="profile.html">Profile</a>
   </header>
   <h1>Vehicle Reservation</h1>
   <form id="reservationForm">
@@ -26,7 +26,23 @@
   </div>
 
   <script>
-    // Move the reserveVehicle function here
+    // Convert the local time (from the datetime-local input) to the required "YYYY-MM-DD HH:MM:SS" format
+    function convertToLocalFormat(dateTimeLocal) {
+      const localTime = new Date(dateTimeLocal);  // Create a Date object from the local time
+
+      // Get the individual components of the date and time
+      const year = localTime.getFullYear();
+      const month = String(localTime.getMonth() + 1).padStart(2, '0');  // Add 1 to month as getMonth() is zero-indexed
+      const day = String(localTime.getDate()).padStart(2, '0');
+      const hours = String(localTime.getHours()).padStart(2, '0');
+      const minutes = String(localTime.getMinutes()).padStart(2, '0');
+      const seconds = String(localTime.getSeconds()).padStart(2, '0');
+
+      // Return the formatted string in "YYYY-MM-DD HH:MM:SS" format
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // Reserve vehicle function
     function reserveVehicle(vehicleId) {
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
@@ -36,27 +52,43 @@
         return;
       }
 
+      // Convert local times to "YYYY-MM-DD HH:MM:SS" format
+      const startTimeFormatted = convertToLocalFormat(startTime);
+      const endTimeFormatted = convertToLocalFormat(endTime);
+
       // Redirect to the reservation page with necessary details in the URL
-      const url = `reservation.html?vehicleId=${vehicleId}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`;
+      const url = `reservation.html?vehicleId=${vehicleId}&startTime=${encodeURIComponent(startTimeFormatted)}&endTime=${encodeURIComponent(endTimeFormatted)}`;
       window.location.href = url;
     }
 
+    // Handle the form submission
     document.getElementById('reservationForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
-      
+
+      // Check if both start and end time are provided
       if (!startTime || !endTime) {
         alert('Both start time and end time are required!');
         return;
       }
 
-      const vehicles = await getAvailableVehicles(startTime, endTime);
+      // Convert local times to "YYYY-MM-DD HH:MM:SS" format
+      const startTimeFormatted = convertToLocalFormat(startTime);
+      const endTimeFormatted = convertToLocalFormat(endTime);
+      
+      if (new Date(startTimeFormatted) > new Date(endTimeFormatted)) {
+      alert('Start time cannot be after end time. Please check the dates and try again.');
+      return;
+    }
+      // Fetch available vehicles with the correct payload
+      const vehicles = await getAvailableVehicles(startTimeFormatted, endTimeFormatted);
       displayVehicles(vehicles);
     });
 
+    // Get available vehicles from the backend
     function getAvailableVehicles(startTime, endTime) {
-      // Create an object to represent the time range
+      // Create an object to represent the time range in the correct format
       const timeRange = {
         start_time: startTime,
         end_time: endTime
@@ -74,7 +106,6 @@
       .then(vehicles => {
         // Ensure vehicles is an array
         if (Array.isArray(vehicles)) {
-          console.log(vehicles);  // Example: log the list of available vehicles
           return vehicles;
         } else {
           console.error('Invalid response format:', vehicles);
@@ -88,6 +119,7 @@
       });
     }
 
+    // Display the available vehicles
     function displayVehicles(vehicles) {
       const vehicleList = document.getElementById('vehicleResults');
       vehicleList.innerHTML = '';
@@ -98,7 +130,7 @@
         vehicles.forEach(vehicle => {
           const listItem = document.createElement('li');
           listItem.innerHTML = `
-            Vehicle model:${vehicle.model} - Plate Number: ${vehicle.license_plate} - Cost: $${vehicle.cost}
+            Vehicle model: ${vehicle.model} - Plate Number: ${vehicle.license_plate} - Cost: $${vehicle.cost}
             <button onclick="reserveVehicle(${vehicle.id})">Reserve</button>
           `;
           vehicleList.appendChild(listItem);

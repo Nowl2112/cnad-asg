@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"log"
 	"reservation-service/model"
-    "time"
+	"time"
 )
 
-// DB instance 
 var db *sql.DB
 
 // Initialize the database connection
@@ -30,104 +29,106 @@ func InitDB(dsn string) error {
 
 // AddReservation
 func AddReservation(reservation *model.Reservation) error {
-    if reservation.Status == "" {
-        reservation.Status = "active" // Default status
-    }
+	if reservation.Status == "" {
+		reservation.Status = "active" // Default status
+	}
 
-    if reservation.StartTime.IsZero() || reservation.EndTime.IsZero() {
-        return fmt.Errorf("start_time and end_time must be provided")
-    }
+	if reservation.StartTime.IsZero() || reservation.EndTime.IsZero() {
+		return fmt.Errorf("start_time and end_time must be provided")
+	}
 
-    // Ensure end_time is after start_time
-    if reservation.EndTime.Before(reservation.StartTime) {
-        return fmt.Errorf("end_time must be after start_time")
-    }
+	// Ensure end_time is after start_time
+	if reservation.EndTime.Before(reservation.StartTime) {
+		return fmt.Errorf("end_time must be after start_time")
+	}
 
-    // Check for overlapping reservations
-    queryConflict := `
+	reservation.StartTime = reservation.StartTime.In(time.Local)
+	reservation.EndTime = reservation.EndTime.In(time.Local)
+	// Check for overlapping reservations
+	queryConflict := `
         SELECT COUNT(*) 
         FROM reservations 
         WHERE vehicle_id = ? 
           AND status = 'active'
           AND NOT (
-              end_time <= ? OR start_time >= ?
+              end_time <= ? OR start_time >= ? 
           );
     `
-    var conflictCount int
-    err := db.QueryRow(queryConflict, reservation.VehicleID, reservation.StartTime, reservation.EndTime).Scan(&conflictCount)
-    if err != nil {
-        return fmt.Errorf("Failed to check vehicle availability: %v", err)
-    }
+	var conflictCount int
+	err := db.QueryRow(queryConflict, reservation.VehicleID, reservation.StartTime, reservation.EndTime).Scan(&conflictCount)
+	if err != nil {
+		return fmt.Errorf("Failed to check vehicle availability: %v", err)
+	}
 
-    if conflictCount > 0 {
-        return fmt.Errorf("The vehicle is not available for the requested time slot")
-    }
+	if conflictCount > 0 {
+		return fmt.Errorf("The vehicle is not available for the requested time slot")
+	}
 
-    // Calculate the total price (hours difference * vehicle hourly cost)
-    var vehicleCost float64
-    err = db.QueryRow("SELECT cost FROM vehicles WHERE id = ?", reservation.VehicleID).Scan(&vehicleCost)
-    if err != nil {
-        return fmt.Errorf("Failed to fetch vehicle cost: %v", err)
-    }
+	// Calculate the total price (hours difference * vehicle hourly cost)
+	var vehicleCost float64
+	err = db.QueryRow("SELECT cost FROM vehicles WHERE id = ?", reservation.VehicleID).Scan(&vehicleCost)
+	if err != nil {
+		return fmt.Errorf("Failed to fetch vehicle cost: %v", err)
+	}
 
-    duration := reservation.EndTime.Sub(reservation.StartTime).Hours()
-    reservation.TotalPrice = duration * vehicleCost
+	duration := reservation.EndTime.Sub(reservation.StartTime).Hours()
+	reservation.TotalPrice = duration * vehicleCost
 
-    // Insert the reservation into the database
-    query := "INSERT INTO reservations(user_id, vehicle_id, start_time, end_time, total_price, status) VALUES(?, ?, ?, ?, ?, ?);"
-    result, err := db.Exec(query, reservation.UserID, reservation.VehicleID, reservation.StartTime, reservation.EndTime, reservation.TotalPrice, reservation.Status)
-    if err != nil {
-        return fmt.Errorf("Failed to add reservation: %v", err)
-    }
+	// Insert the reservation into the database
+	query := "INSERT INTO reservations(user_id, vehicle_id, start_time, end_time, total_price, status) VALUES(?, ?, ?, ?, ?, ?);"
+	result, err := db.Exec(query, reservation.UserID, reservation.VehicleID, reservation.StartTime, reservation.EndTime, reservation.TotalPrice, reservation.Status)
+	if err != nil {
+		return fmt.Errorf("Failed to add reservation: %v", err)
+	}
 
-    reservationID, err := result.LastInsertId()
-    if err != nil {
-        return fmt.Errorf("Failed to retrieve last insert ID: %v", err)
-    }
+	reservationID, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("Failed to retrieve last insert ID: %v", err)
+	}
 
-    reservation.ID = int(reservationID)
-    return nil
+	reservation.ID = int(reservationID)
+	return nil
 }
-
 
 // CompleteReservation updates the reservation with an end_time and makes the vehicle available again
 func CompleteReservation(reservationID int) error {
-    // Update reservation with status to 'completed'
-    updateReservationQuery := "UPDATE reservations SET status = 'completed' WHERE id = ?"
-    _, err := db.Exec(updateReservationQuery, reservationID)
-    if err != nil {
-        return fmt.Errorf("Failed to complete reservation: %v", err)
-    }
+	// Update reservation with status to 'completed'
+	updateReservationQuery := "UPDATE reservations SET status = 'completed' WHERE id = ?"
+	_, err := db.Exec(updateReservationQuery, reservationID)
+	if err != nil {
+		return fmt.Errorf("Failed to complete reservation: %v", err)
+	}
 
-    return nil
+	return nil
 }
 
 // GetReservation retrieves a reservation by ID
 func GetReservation(id int) (*model.Reservation, error) {
-    var reservation model.Reservation
-    query := "SELECT id, user_id, vehicle_id, start_time, end_time, total_price, status, created_at, updated_at FROM reservations WHERE id = ?"
+	var reservation model.Reservation
+	query := "SELECT id, user_id, vehicle_id, start_time, end_time, total_price, status, created_at, updated_at FROM reservations WHERE id = ?"
 
-    var startTime []byte
-    var endTime []byte
-    err := db.QueryRow(query, id).Scan(&reservation.ID, &reservation.UserID, &reservation.VehicleID, &startTime, &endTime, &reservation.TotalPrice, &reservation.Status, &reservation.CreatedAt, &reservation.UpdatedAt)
-    if err != nil {
-        return nil, fmt.Errorf("Failed to retrieve reservation: %v", err)
-    }
+	var startTime []byte
+	var endTime []byte
+	err := db.QueryRow(query, id).Scan(&reservation.ID, &reservation.UserID, &reservation.VehicleID, &startTime, &endTime, &reservation.TotalPrice, &reservation.Status, &reservation.CreatedAt, &reservation.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to retrieve reservation: %v", err)
+	}
 
-    // Convert byte slices to time.Time
-    reservation.StartTime, err = time.Parse("2006-01-02 15:04:05", string(startTime))
-    if err != nil {
-        return nil, fmt.Errorf("Failed to parse start_time: %v", err)
-    }
+	// Convert byte slices to time.Time (local time)
+	reservation.StartTime, err = time.ParseInLocation("2006-01-02 15:04:05", string(startTime), time.Local)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse start_time: %v", err)
+	}
 
-    reservation.EndTime, err = time.Parse("2006-01-02 15:04:05", string(endTime))
-    if err != nil {
-        return nil, fmt.Errorf("Failed to parse end_time: %v", err)
-    }
+	reservation.EndTime, err = time.ParseInLocation("2006-01-02 15:04:05", string(endTime), time.Local)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse end_time: %v", err)
+	}
 
-    return &reservation, nil
+	return &reservation, nil
 }
 
+// UpdateReservation updates an existing reservation if conditions are met.
 // UpdateReservation updates an existing reservation if conditions are met.
 func UpdateReservation(id int, updated *model.Reservation) error {
     var current model.Reservation
@@ -149,6 +150,10 @@ func UpdateReservation(id int, updated *model.Reservation) error {
         return fmt.Errorf("Invalid new start or end time")
     }
 
+    // Ensure times are in the local time zone
+    updated.StartTime = updated.StartTime.In(time.Local)
+    updated.EndTime = updated.EndTime.In(time.Local)
+
     query = "UPDATE reservations SET start_time = ?, end_time = ?, updated_at = NOW() WHERE id = ?"
     _, err = db.Exec(query, updated.StartTime, updated.EndTime, id)
     if err != nil {
@@ -158,36 +163,37 @@ func UpdateReservation(id int, updated *model.Reservation) error {
     return nil
 }
 
+
 // CancelReservation cancels an active reservation if conditions are met.
 func CancelReservation(id int) error {
-    var current model.Reservation
-    query := "SELECT id, start_time, status FROM reservations WHERE id = ?"
-    err := db.QueryRow(query, id).Scan(&current.ID, &current.StartTime, &current.Status)
-    if err != nil {
-        return fmt.Errorf("Reservation not found or retrieval error: %v", err)
-    }
+	var current model.Reservation
+	query := "SELECT id, start_time, status FROM reservations WHERE id = ?"
+	err := db.QueryRow(query, id).Scan(&current.ID, &current.StartTime, &current.Status)
+	if err != nil {
+		return fmt.Errorf("Reservation not found or retrieval error: %v", err)
+	}
 
-    if current.Status != "active" {
-        return fmt.Errorf("Only active reservations can be cancelled")
-    }
+	if current.Status != "active" {
+		return fmt.Errorf("Only active reservations can be cancelled")
+	}
 
-    if time.Until(current.StartTime) < 5*time.Minute {
-        return fmt.Errorf("Reservations can only be cancelled at least 5 minutes before the start time")
-    }
+	if time.Until(current.StartTime) < 5*time.Minute {
+		return fmt.Errorf("Reservations can only be cancelled at least 5 minutes before the start time")
+	}
 
-    query = "UPDATE reservations SET status = 'cancelled', updated_at = NOW() WHERE id = ?"
-    _, err = db.Exec(query, id)
-    if err != nil {
-        return fmt.Errorf("Failed to cancel reservation: %v", err)
-    }
+	query = "UPDATE reservations SET status = 'cancelled', updated_at = NOW() WHERE id = ?"
+	_, err = db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("Failed to cancel reservation: %v", err)
+	}
 
-    return nil
+	return nil
 }
 
 func CalculateEstimatedCost(vehicleID, userID int, startTime, endTime int64) (float64, error) {
-	// Convert Unix timestamps to time.Time
-	start := time.Unix(startTime, 0)
-	end := time.Unix(endTime, 0)
+	// Convert Unix timestamps to time.Time (local time)
+	start := time.Unix(startTime, 0).In(time.Local)
+	end := time.Unix(endTime, 0).In(time.Local)
 
 	// Fetch the vehicle's cost per unit time (e.g., hourly rate)
 	var costPerUnit float64
