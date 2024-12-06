@@ -84,6 +84,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 <p><strong>Start Time:</strong> ${item.startTime ? new Date(item.startTime).toLocaleString() : 'N/A'}</p>
                                 <p><strong>End Time:</strong> ${item.endTime ? new Date(item.endTime).toLocaleString() : 'N/A'}</p>
                                 <p><strong>Total Price:</strong> $${item.totalPrice || '0.00'}</p>
+                                <p><strong>Status:</strong> ${item.status || 'Unknown'}</p>
+
                                 <hr>
                             `;
                             rentalHistoryList.appendChild(listItem);

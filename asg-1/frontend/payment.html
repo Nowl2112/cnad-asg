@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment</title>
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+  <h1>Complete Your Payment</h1>
+  <div id="payment-form">
+    <!-- Stripe Elements form will go here -->
+  </div>
+  <button id="payButton">Pay Now</button>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Get the reservation details and client secret from the URL parameters
+      const params = new URLSearchParams(window.location.search);
+      const reservationId = params.get('reservation_id');
+      const clientSecret = params.get('client_secret');
+
+      if (!clientSecret) {
+        alert('Payment details not found!');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      // Initialize Stripe
+      const stripe = Stripe('pk_test_51QSOXHE4kxPn6gfJrDUMFz5K8q3XHfqkPqM1PQzOyaUHU9yq9gHp07ryik1HMC1m7Z23VlzPfb8bWkqnzlyMjpCw00l9AVjeAq');
+      const elements = stripe.elements();
+
+      // Create an instance of the card Element
+      const card = elements.create('card');
+      card.mount('#payment-form');
+
+      // Handle the payment submission
+      document.getElementById('payButton').addEventListener('click', async () => {
+        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: card,
+          }
+        });
+
+        if (error) {
+          alert(error.message);
+        } else if (paymentIntent.status === 'succeeded') {
+          // Step 3: Successfully paid, now confirm the reservation
+          const paymentConfirmation = await fetch('http://localhost:8082/confirm-reservation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservation_id: reservationId, payment_intent: paymentIntent.id })
+          }).then(res => res.json());
+
+          if (paymentConfirmation.success) {
+            alert('Payment and reservation confirmed!');
+            window.location.href = 'homepage.html'; // Redirect to homepage or confirmation page
+          } else {
+            alert('Reservation failed!');
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Reservation</title>
+</head>
+<body>
+  <h1>Confirm Reservation</h1>
+  <div id="vehicleDetails">
+    <h2>Vehicle Details</h2>
+    <p id="vehicleInfo"></p>
+  </div>
+  <div id="reservationDetails">
+    <h2>Reservation Details</h2>
+    <p>Start Time: <span id="startTime"></span></p>
+    <p>End Time: <span id="endTime"></span></p>
+    <p>Cost per Hour: $<span id="costPerHour"></span></p>
+    <p>Total Estimated Cost: $<span id="totalCost"></span></p>
+  </div>
+<button id="confirmReservation">Confirm Reservation</button>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Extract URL parameters
+      const params = new URLSearchParams(window.location.search);
+      const vehicleId = params.get('vehicleId');
+      const startTime = params.get('startTime');
+      const endTime = params.get('endTime');
+      const userId = localStorage.getItem('user_id');
+
+      if (!userId) {
+        alert("Not logged in");
+        window.location.href = 'index.html'; // Redirect to login if not logged in
+        return;
+      }
+
+      // Display reservation times
+      document.getElementById('startTime').textContent = new Date(startTime).toLocaleString();
+      document.getElementById('endTime').textContent = new Date(endTime).toLocaleString();
+
+      // Format times for sending in request
+      const formattedStart = new Date(startTime).toISOString();
+      const formattedEnd = new Date(endTime).toISOString();
+  
+      const formattedStart2= new Date(formattedStart).toISOString().replace('.000Z', 'Z');
+      const formattedEnd2= new Date(formattedEnd).toISOString().replace('.000Z', 'Z');
+    
+
+      // Convert user_id and vehicle_id to integers
+      const vehicleIdInt = parseInt(vehicleId, 10); // Convert to integer
+      const userIdInt = parseInt(userId, 10); // Convert to integer
+
+      // Fetch vehicle details
+      const vehicle = await fetch(`http://localhost:8081/vehicles/byID/${vehicleIdInt}`).then(res => res.json());
+      document.getElementById('vehicleInfo').textContent = `Model: ${vehicle.model}, License Plate: ${vehicle.license_plate}`;
+      document.getElementById('costPerHour').textContent = vehicle.cost;
+
+      // Convert times to Unix timestamps for estimation
+      const startUnix = new Date(startTime).getTime() / 1000;  // Convert to Unix timestamp
+      const endUnix = new Date(endTime).getTime() / 1000;  // Convert to Unix timestamp
+
+      // Estimate total cost based on the reservation
+      const totalCost = await fetch('http://localhost:8082/reservations/estimate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vehicle_id: vehicleIdInt,  // Send as integer
+          user_id: userIdInt,        // Send as integer
+          start_time: startUnix,
+          end_time: endUnix
+        })
+      }).then(res => res.json());
+
+      console.log({ vehicle_id: vehicleIdInt, user_id: userIdInt, start_time: startUnix, end_time: endUnix });
+      document.getElementById('totalCost').textContent = totalCost.total_cost;
+
+      // Confirm reservation on button click
+      document.getElementById('confirmReservation').addEventListener('click', async () => {
+        const reservation = {
+          user_id: userIdInt,  // Send as integer
+          vehicle_id: vehicleIdInt,  // Send as integer
+          start_time: formattedStart2,
+          end_time: formattedEnd2
+        };
+
+        await fetch('http://localhost:8082/reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(reservation)
+        });
+
+        alert('Reservation confirmed!');
+        window.location.href = 'homepage.html'; // Redirect back to homepage
+      });
+    });
+  </script>
+</body>
+</html>

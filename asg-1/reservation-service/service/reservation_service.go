@@ -184,7 +184,11 @@ func CancelReservation(id int) error {
     return nil
 }
 
-func CalculateEstimatedCost(vehicleID, userID int, startTime, endTime time.Time) (float64, error) {
+func CalculateEstimatedCost(vehicleID, userID int, startTime, endTime int64) (float64, error) {
+	// Convert Unix timestamps to time.Time
+	start := time.Unix(startTime, 0)
+	end := time.Unix(endTime, 0)
+
 	// Fetch the vehicle's cost per unit time (e.g., hourly rate)
 	var costPerUnit float64
 	query := "SELECT cost FROM vehicles WHERE id = ?"
@@ -206,7 +210,7 @@ func CalculateEstimatedCost(vehicleID, userID int, startTime, endTime time.Time)
 	}
 
 	// Calculate the duration in hours
-	duration := endTime.Sub(startTime).Hours()
+	duration := end.Sub(start).Hours()
 	if duration < 0 {
 		return 0, fmt.Errorf("End time cannot be before start time")
 	}
@@ -228,4 +232,3 @@ func CalculateEstimatedCost(vehicleID, userID int, startTime, endTime time.Time)
 
 	return totalCost, nil
 }
-

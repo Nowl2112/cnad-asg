@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("user_id", data.user_id);
 
             alert("Login successful!");
-            window.location.href = "profile.html"; // Redirect to homepage
+            window.location.href = "homepage.html"; // Redirect to homepage
         } catch (err) {
             console.error("Error:", err);
             alert(err.message);

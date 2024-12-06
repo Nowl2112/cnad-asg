@@ -18,10 +18,9 @@ type Reservation struct{
 type EstimateRequest struct {
 	VehicleID int    `json:"vehicle_id"`
 	UserID    int    `json:"user_id"`
-	StartTime string `json:"start_time"`
-	EndTime   string `json:"end_time"`
+	StartTime int64  `json:"start_time"`  // Unix timestamp for start time
+	EndTime   int64  `json:"end_time"`    // Unix timestamp for end time
 }
-
 
 type EstimateResponse struct {
 	TotalCost float64 `json:"total_cost"`

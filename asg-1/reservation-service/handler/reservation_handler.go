@@ -164,21 +164,16 @@ func CalculateReservationCostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse the start and end times from the request
-	startTime, err := time.Parse(time.RFC3339, request.StartTime)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid start time format: %v", err), http.StatusBadRequest)
-		return
-	}
+	// Convert the Unix timestamp (int64) to time.Time using time.Unix
+	startTime := time.Unix(request.StartTime, 0)  // Convert Unix timestamp to time.Time
+	endTime := time.Unix(request.EndTime, 0)      // Convert Unix timestamp to time.Time
 
-	endTime, err := time.Parse(time.RFC3339, request.EndTime)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid end time format: %v", err), http.StatusBadRequest)
-		return
-	}
+	// Convert back the time.Time to Unix timestamp (int64)
+	startUnix := startTime.Unix()  // Get Unix timestamp in int64
+	endUnix := endTime.Unix()      // Get Unix timestamp in int64
 
-	// Call the service to calculate the estimated cost
-	totalCost, err := service.CalculateEstimatedCost(request.VehicleID, request.UserID, startTime, endTime)
+	// Call the service to calculate the estimated cost with Unix timestamps
+	totalCost, err := service.CalculateEstimatedCost(request.VehicleID, request.UserID, startUnix, endUnix)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to calculate cost: %v", err), http.StatusInternalServerError)
 		return
