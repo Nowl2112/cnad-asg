@@ -8,8 +8,30 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+func SendReservationEmail(w http.ResponseWriter, r *http.Request) {
+	// Parse the JSON body from the request
+	var requestData struct {
+		ReservationID int     `json:"reservation_id"`
+		UserEmail     string  `json:"user_email"`
+		CarPlate      string  `json:"CarPlate"`
+		TotalCost     float64 `json:"total_cost"`
+	}
 
+	// Decode the request body into the struct
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to decode request body: %v", err), http.StatusBadRequest)
+		return
+	}
 
+	// Call SendReservationEmail with the extracted data
+	err := service.SendReservationEmail(requestData.UserEmail, requestData.ReservationID, requestData.CarPlate, requestData.TotalCost)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to send email: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("Email sent successfully"))
+}
 
 func HandleCreatePaymentIntent(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -90,24 +112,3 @@ func HandleCreatePaymentForReservation(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, response)
 }
 
-
-func HandlePaymentSuccess(w http.ResponseWriter, r *http.Request) {
-	// Simulate payment success
-	reservationID := 123      
-	vehicleID := 456          
-	totalCost := 100.00      
-	startTime := "2024-12-05T10:00:00Z"
-	endTime := "2024-12-05T15:00:00Z"  
-	userEmail := "user@example.com"    
-
-	// Send the reservation details email
-	err := service.SendReservationEmail(userEmail, reservationID, vehicleID, totalCost, startTime, endTime)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to send email: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Respond with success
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Payment processed and email sent successfully"))
-}

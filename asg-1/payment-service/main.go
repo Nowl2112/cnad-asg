@@ -13,7 +13,7 @@ import (
 
 func main() {
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"}, // Allow all origins (can be restricted to specific origins)
+		AllowedOrigins: []string{"*"}, 
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Content-Type", "Authorization"},
 	})
@@ -33,8 +33,7 @@ func main() {
 	// Register routes
 	router.HandleFunc("/create-payment-intent", handler.HandleCreatePaymentIntent).Methods("POST")
 	router.HandleFunc("/create-payment-for-reservation", handler.HandleCreatePaymentForReservation).Methods("POST")
-	
-	
+	router.HandleFunc("/send-email", handler.SendReservationEmail).Methods("POST")
 	handler := corsHandler.Handler(router)
 
 	// Start the server

@@ -114,7 +114,15 @@ func UpdateReservation(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    err = service.UpdateReservation(id, &reservation)
+    updateReservation := &model.UpdateReservation{
+        ID:         id,
+        StartTime:  reservation.StartTime,
+        EndTime:    reservation.EndTime,
+        Status:     reservation.Status,
+        TotalPrice: reservation.TotalPrice,
+    }
+
+    err = service.UpdateReservation(id, updateReservation)
     if err != nil {
         http.Error(w, fmt.Sprintf("Error updating reservation: %v", err), http.StatusBadRequest)
         return

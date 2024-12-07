@@ -10,8 +10,17 @@ type Reservation struct{
 	EndTime     time.Time `json:"end_time"`
 	TotalPrice  float64   `json:"total_price"`
 	Status      string    `json:"status"`
-	CreatedAt   string    `json:"created_at"`
-	UpdatedAt   string    `json:"updated_at"`
+	CreatedAt   string    `json:"created_at, omitempty"`
+	UpdatedAt   string    `json:"updated_at, omitempty"`
+	CarPlate   string    `json:"car_plate,omitempty"`
+
+}
+type UpdateReservation struct{
+	ID			int       `json:"id"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
+	Status      string    `json:"status"`
+	TotalPrice  float64   `json:"total_price"`
 }
 
 

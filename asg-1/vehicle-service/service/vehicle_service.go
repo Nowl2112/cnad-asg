@@ -52,9 +52,7 @@ func GetVehicle(id int) (*model.Vehicle, error) {
 		return nil, fmt.Errorf("Failed to retrieve vehicle: %v", err)
 	}
 
-	// Convert time to local time
-	vehicle.CreatedAt = vehicle.CreatedAt.In(time.Local)
-	vehicle.UpdatedAt = vehicle.UpdatedAt.In(time.Local)
+
 
 	return &vehicle, nil
 }
@@ -119,15 +117,14 @@ func GetAvailableVehicles(startTime, endTime string) ([]model.Vehicle, error) {
 
 	query := `
 		SELECT id, license_plate, model, charge_level, cleanliness, location, cost
-		FROM vehicles 
-		WHERE id NOT IN (
-			SELECT vehicle_id 
-			FROM reservations 
-			WHERE status = 'active' 
-			  AND NOT (
-				  end_time <= ? OR start_time >= ?
-			  )
-		);
+FROM vehicles
+WHERE id NOT IN (
+    SELECT vehicle_id 
+    FROM reservations 
+    WHERE (status = 'active' OR status = 'completed')
+      AND (NOT (end_time <= ? OR start_time >= ?))
+);
+
 	`
 
 	rows, err := db.Query(query, start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"))

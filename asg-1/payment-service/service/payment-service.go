@@ -3,7 +3,6 @@ package service
 import (
 	"database/sql"
 	"fmt"
-    "time"
 	"os"
 	"github.com/stripe/stripe-go/v81"
 	"github.com/stripe/stripe-go/v81/paymentintent"
@@ -43,11 +42,15 @@ func InitDB(dsn string) error {
 }
 
 
-
-
 func init() {
-	stripe.Key = os.Getenv("sk_test_51QSOXHE4kxPn6gfJSMF4SSpbJBv9mRvFav8ePrgPrRONLYQFLDYS178QEZirawSIDzU5zP8DLDwiRIK3FunuG4Po00rSE7EfRx")
-  }
+    stripeKey := os.Getenv("STRIPE_SECRET_KEY")
+    if stripeKey == "" {
+        log.Fatalf("Stripe secret key is not set in the environment variables")
+    }
+    log.Printf("Stripe Key: %s", stripeKey[:8]) // Only show the first few characters for debugging
+    stripe.Key = stripeKey
+}
+
 
   type Reservation struct {
 	ReservationID int
@@ -81,37 +84,54 @@ func FetchReservationDetails(reservationID int) (*Reservation, error) {
 }
 
 func CreatePaymentIntentForReservation(reservationID int) (*stripe.PaymentIntent, error) {
-	// Fetch reservation details
-	reservation, err := FetchReservationDetails(reservationID)
-	if err != nil {
-		log.Printf("Failed to fetch reservation: %v", err)
-		return nil, err
-	}
+    // Fetch reservation details
+    reservation, err := FetchReservationDetails(reservationID)
+    if err != nil {
+        log.Printf("Failed to fetch reservation: %v", err)
+        return nil, err
+    }
 
-	// Convert the total cost to cents for Stripe (as Stripe uses smallest currency units)
-	amount := int64(reservation.TotalCost * 100)
+    // Log reservation details and total cost for debugging
+    log.Printf("Fetched reservation: %+v, Total cost: %.2f", reservation, reservation.TotalCost)
 
-	// Create PaymentIntent parameters
-	params := &stripe.PaymentIntentParams{
-		Amount:   stripe.Int64(amount),
-		Currency: stripe.String(string(stripe.CurrencyUSD)),
-		AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
-			Enabled: stripe.Bool(true),
-		},
-		Metadata: map[string]string{
-			"reservation_id": fmt.Sprintf("%d", reservationID),
-		},
-	}
+    // Check if the reservation total cost is valid (greater than 0)
+    if reservation.TotalCost <= 0 {
+        log.Printf("Invalid reservation total cost: %.2f. Amount must be greater than zero.", reservation.TotalCost)
+        return nil, fmt.Errorf("Invalid reservation total cost: %.2f. Amount must be greater than zero.", reservation.TotalCost)
+    }
 
-	// Create the PaymentIntent
-	pi, err := paymentintent.New(params)
-	if err != nil {
-		log.Printf("Failed to create payment intent: %v", err)
-		return nil, err
-	}
+    // Convert the total cost to cents for Stripe (as Stripe uses smallest currency units)
+    amount := int64(reservation.TotalCost * 100)
+    log.Printf("Amount in cents: %d", amount)
 
-	return pi, nil
+    // Check if the amount is below the minimum charge allowed (50 cents for USD)
+    if amount < 50 {
+        log.Printf("Amount is below the minimum (50 cents), adjusting to 50 cents.")
+        amount = 50 // Set to 50 cents if less
+    }
+
+    // Create PaymentIntent parameters
+    params := &stripe.PaymentIntentParams{
+        Amount:   stripe.Int64(amount),
+        Currency: stripe.String(string(stripe.CurrencyUSD)),
+        AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
+            Enabled: stripe.Bool(true),
+        },
+        Metadata: map[string]string{
+            "reservation_id": fmt.Sprintf("%d", reservationID),
+        },
+    }
+
+    // Create the PaymentIntent
+    pi, err := paymentintent.New(params)
+    if err != nil {
+        log.Printf("Failed to create payment intent: %v", err)
+        return nil, err
+    }
+
+    return pi, nil
 }
+
 
 func CalculateOrderAmount(items []Item) int64 {
 	var total int64
@@ -143,7 +163,7 @@ func CreatePaymentIntent(items []Item) (*stripe.PaymentIntent, error) {
 	return pi, nil
 }
 
-func SendReservationEmail(toEmail string, reservationID int, vehicleID int, totalCost float64, startTime, endTime string) error {
+func SendReservationEmail(toEmail string, reservationID int, vehicleplate string, totalCost float64) error {
 	// Create the email content
 	subject := "Your Reservation Details"
 	body := fmt.Sprintf(`
@@ -152,16 +172,14 @@ func SendReservationEmail(toEmail string, reservationID int, vehicleID int, tota
 		Thank you for your reservation. Here are your reservation details:
 
 		Reservation ID: %d
-		Vehicle ID: %d
-		Start Time: %s
-		End Time: %s
+		Vehicle plate: %d
 		Total Cost: $%.2f
 
 		We hope you enjoy your experience!
 
 		Best regards,
 		Your Company Name
-	`, reservationID, vehicleID, startTime, endTime, totalCost)
+	`, reservationID, vehicleplate, totalCost)
 
 	// Create the email message
 	message := gomail.NewMessage()
