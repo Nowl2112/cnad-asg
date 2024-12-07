@@ -8,203 +8,186 @@
 </head>
 <body>
     <h1>Complete Your Payment</h1>
-    
-    <!-- Reservation Details Section -->
     <div id="reservation-details">
         <p><strong>Reservation ID:</strong> <span id="reservation-id"></span></p>
         <p><strong>Vehicle:</strong> <span id="vehicle"></span></p>
         <p><strong>Total Price:</strong> $<span id="total-price"></span></p>
     </div>
-
-    <!-- Payment Status -->
     <div id="payment-status"></div>
-
-    <!-- Payment Form for Card -->
-    <div id="payment-form">
-        <!-- Card Element will be added here -->
-    </div>
-
+    <div id="payment-form"></div>
     <button id="pay-btn">Pay Now</button>
-
     <script>
-      const userId = localStorage.getItem("user_id");
-      const urlParams = new URLSearchParams(window.location.search);
-      const clientSecret = urlParams.get('client_secret');
-      const reservationId = urlParams.get('reservation_id');
-  
-      if (!clientSecret || !reservationId) {
-          alert('Missing payment intent or reservation ID.');
-          window.location.href = 'index.html'; // Redirect to homepage if missing data
-      }
-  
-      const stripe = Stripe('pk_test_51QSOXHE4kxPn6gfJLxErYKpsE4kdIbOvqJwtww1P5RdgrcjjchyixiRu9YMIVtHO7gOxTOYGTZtFo5kDmDIYkSBu00hkwqA7uP');
-      const elements = stripe.elements();
-  
-      // Fetch User Details
-      async function getUserDetails() {
-          try {
-              // Assuming you have an endpoint to fetch user details by user_id
-              const response = await fetch(`http://localhost:8080/user/${userId}`);
-              if (response.ok) {
-                  const userDetails = await response.json();
-                  console.log('User details:', userDetails);
-                  return userDetails;
-              } else {
-                  alert('Failed to fetch user details.');
-                  return null;
-              }
-          } catch (error) {
-              console.error('Error fetching user details:', error);
-              alert('An error occurred while fetching user details.');
-              return null;
-          }
-      }
-      async function getReservationDetails() {
-          try {
-              const response = await fetch(`http://localhost:8082/reservations/${reservationId}`);
-              if (response.ok) {
-                  const reservation_details = await response.json();
-                  console.log('reservation details:', reservation_details);
-                  return reservation_details;
-              } else {
-                  alert('Failed to fetch reservation details.');
-                  return null;
-              }
-          } catch (error) {
-              console.error('Error fetching reservation details:', error);
-              alert('An error occurred while fetching reservation details.');
-              return null;
-          }
-      }
-  
-      // Fetch Reservation Details
-      async function fetchReservationDetails() {
-          try {
-              const response = await fetch(`http://localhost:8082/reservations/${reservationId}`);
-              if (response.ok) {
-                  const reservation = await response.json();
-                  console.log(reservation);
-  
-                  const totalPrice = reservation.total_price || 0; // Ensure a fallback if total_price is not available
-                  if (isNaN(totalPrice) || totalPrice <= 0) {
-                      alert('Invalid total price.');
-                      return 0;
-                  }
-  
-                  document.getElementById('reservation-id').innerText = reservation.id;
-                  document.getElementById('vehicle').innerText = reservation.car_plate || 'Unknown';
-                  document.getElementById('total-price').innerText = totalPrice;
-  
-                  return totalPrice * 100; // Convert to cents
-              } else {
-                  alert('Failed to fetch reservation details.');
-                  return 0;
-              }
-          } catch (error) {
-              console.error('Error fetching reservation details:', error);
-              alert('An error occurred while fetching reservation details.');
-              return 0;
-          }
-      }
+        // Retrieve user ID from local storage and reservation details from the URL
+        const userId = localStorage.getItem("user_id");
+        const urlParams = new URLSearchParams(window.location.search);
+        const clientSecret = urlParams.get('client_secret');
+        const reservationId = urlParams.get('reservation_id');
       
-      async function sendEmail() {
-    try {
-        const reservationDetails = await getReservationDetails(); 
-        if (!reservationDetails) {
-            alert('Failed to retrieve reservation details.');
-            return;
+        // If required parameters are missing, show an alert and redirect to the homepage
+        if (!clientSecret || !reservationId) {
+            alert('Missing payment intent or reservation ID.');
+            window.location.href = 'index.html';
         }
-        
-        const userDetails = await getUserDetails(); // Fix this line to call getUserDetails correctly
-        console.log(userDetails);
-        
-        const emailPayload = {
-            reservation_id: parseInt(reservationId), 
-            user_email: userDetails.email, 
-            CarPlate: reservationDetails.car_plate,  // Ensure reservationDetails is used here
-            total_cost: reservationDetails.total_price,  
-        };
-        
-        console.log("Payload for email API:", emailPayload);
-        
-        const emailResponse = await fetch(`http://localhost:8083/send-email`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(emailPayload),
-        });
-
-        if (emailResponse.ok) {
-            console.log('Email sent successfully');
-            window.location.href = 'profile.html'; // Redirect after successful email sending
-        } else {
+      
+        // Initialize Stripe with the public key
+        const stripe = Stripe('pk_test_51QSOXHE4kxPn6gfJLxErYKpsE4kdIbOvqJwtww1P5RdgrcjjchyixiRu9YMIVtHO7gOxTOYGTZtFo5kDmDIYkSBu00hkwqA7uP');
+        const elements = stripe.elements();
+      
+        // Fetch user details from the backend
+        async function getUserDetails() {
+            try {
+                const response = await fetch(`http://localhost:8080/user/${userId}`);
+                if (response.ok) {
+                    const userDetails = await response.json();
+                    return userDetails;
+                } else {
+                    alert('Failed to fetch user details.');
+                    return null;
+                }
+            } catch (error) {
+                alert('An error occurred while fetching user details.');
+                return null;
+            }
         }
-    } catch (error) {
-        console.error('Error sending email:', error);
-    }
-}
-
-  
-      async function setupPayment() {
-          const totalAmount = await fetchReservationDetails();
-          
-          // Create Card Element
-          const cardElement = elements.create('card');
-          cardElement.mount('#payment-form'); // Mount card input field in the form
-  
-          // Create a Payment Request for the PaymentRequestButton
-          const paymentRequest = stripe.paymentRequest({
-              country: 'US',
-              currency: 'usd',
-              total: {
-                  label: 'Reservation Payment',
-                  amount: totalAmount,
-              },
-              requestPayerName: true,
-              requestPayerEmail: true,
-          });
-  
-          // Check if payment request can be made
-          paymentRequest.canMakePayment().then((result) => {
-              if (result && result.applePay) {
-                  const paymentRequestButton = elements.create('paymentRequestButton', {
-                      paymentRequest: paymentRequest,
-                  });
-                  paymentRequestButton.mount('#payment-status');
-              } else {
-                  document.getElementById('payment-status').innerHTML = '<p>Payment Request button is not available. Please use the card details below.</p>';
-              }
-          });
-  
-          // Listen for the 'Pay Now' button click event to confirm the payment intent
-          document.getElementById('pay-btn').addEventListener('click', async () => {
-              const {error, paymentIntent} = await stripe.confirmCardPayment(clientSecret, {
-                  payment_method: {
-                      card: cardElement, // Pass the card element here for Stripe payment confirmation
-                  },
-              });
-  
-              if (error) {
-                  console.log(error.message);
-                  alert('Payment failed: ' + error.message);
-              } else if (paymentIntent.status === 'succeeded') {
-                  alert('Payment completed successfully!');
-                  const userDetails=getUserDetails(userId)
-                  sendEmail( reservationId)
-                  const response = await fetch(`http://localhost:8082/reservations/${reservationId}/complete`, {
-                                              method: 'PUT',
-                                          });
-                  const url = `profile.html`;
-                  window.location.href = url;
-                  // Optionally, finalize reservation status via an API call to your backend
-              }
-          });
-      }
-  
-      // Initialize the payment process
-      setupPayment();
-  </script>
-  
+      
+        // Fetch reservation details
+        async function getReservationDetails() {
+            try {
+                const response = await fetch(`http://localhost:8082/reservations/${reservationId}`);
+                if (response.ok) {
+                    const reservation_details = await response.json();
+                    return reservation_details;
+                } else {
+                    alert('Failed to fetch reservation details.');
+                    return null;
+                }
+            } catch (error) {
+                alert('An error occurred while fetching reservation details.');
+                return null;
+            }
+        }
+      
+        // This function fetches reservation details and updates the UI
+        async function fetchReservationDetails() {
+            try {
+                const response = await fetch(`http://localhost:8082/reservations/${reservationId}`);
+                if (response.ok) {
+                    const reservation = await response.json();
+                    const totalPrice = reservation.total_price || 0;
+      
+                    // Ensure the total price is valid before displaying
+                    if (isNaN(totalPrice) || totalPrice <= 0) {
+                        alert('Invalid total price.');
+                        return 0;
+                    }
+      
+                    document.getElementById('reservation-id').innerText = reservation.id;
+                    document.getElementById('vehicle').innerText = reservation.car_plate || 'Unknown';
+                    document.getElementById('total-price').innerText = totalPrice;
+      
+                    return totalPrice * 100; // Stripe expects amount in cents
+                } else {
+                    alert('Failed to fetch reservation details.');
+                    return 0;
+                }
+            } catch (error) {
+                alert('An error occurred while fetching reservation details.');
+                return 0;
+            }
+        }
+      
+        // Function to send a confirmation email after payment
+        async function sendEmail() {
+            try {
+                const reservationDetails = await getReservationDetails(); 
+                if (!reservationDetails) {
+                    alert('Failed to retrieve reservation details.');
+                    return;
+                }
+      
+                const userDetails = await getUserDetails(); 
+      
+                const emailPayload = {
+                    reservation_id: parseInt(reservationId),
+                    user_email: userDetails.email,
+                    CarPlate: reservationDetails.car_plate,
+                    total_cost: reservationDetails.total_price,
+                };
+      
+                const emailResponse = await fetch(`http://localhost:8083/send-email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(emailPayload),
+                });
+      
+                if (emailResponse.ok) {
+                    window.location.href = 'profile.html';
+                }
+            } catch (error) {
+                // Handle email sending error if necessary
+            }
+        }
+      
+        // Set up Stripe payment process and mount the card input field
+        async function setupPayment() {
+            const totalAmount = await fetchReservationDetails(); // Fetch reservation and total amount
+      
+            const cardElement = elements.create('card');
+            cardElement.mount('#payment-form'); // Mount the Stripe card input field to the DOM
+      
+            // Create a payment request to handle different payment methods like Apple Pay
+            const paymentRequest = stripe.paymentRequest({
+                country: 'US',
+                currency: 'usd',
+                total: {
+                    label: 'Reservation Payment',
+                    amount: totalAmount,
+                },
+                requestPayerName: true,
+                requestPayerEmail: true,
+            });
+      
+            // Check if Apple Pay is available and add a button if supported
+            paymentRequest.canMakePayment().then((result) => {
+                if (result && result.applePay) {
+                    const paymentRequestButton = elements.create('paymentRequestButton', {
+                        paymentRequest: paymentRequest,
+                    });
+                    paymentRequestButton.mount('#payment-status');
+                } else {
+                    document.getElementById('payment-status').innerHTML = '<p>Payment Request button is not available. Please use the card details below.</p>';
+                }
+            });
+      
+            // Handle the final payment confirmation when the user clicks the 'Pay Now' button
+            document.getElementById('pay-btn').addEventListener('click', async () => {
+                const {error, paymentIntent} = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: {
+                        card: cardElement,
+                    },
+                });
+      
+                // Handle payment error or success
+                if (error) {
+                    alert('Payment failed: ' + error.message);
+                } else if (paymentIntent.status === 'succeeded') {
+                    alert('Payment completed successfully!');
+                    const userDetails = getUserDetails(userId); // Fetch user details
+                    sendEmail(reservationId); // Send confirmation email
+                    const response = await fetch(`http://localhost:8082/reservations/${reservationId}/complete`, {
+                        method: 'PUT', // Mark the reservation as complete
+                    });
+                    const url = `profile.html`;
+                    window.location.href = url; // Redirect to profile page
+                }
+            });
+        }
+      
+        // Initialize the payment setup
+        setupPayment();
+      </script>
+      
 </body>
 </html>

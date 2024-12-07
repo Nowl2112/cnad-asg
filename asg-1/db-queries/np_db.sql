@@ -15,6 +15,15 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+ALTER TABLE users
+ADD COLUMN verification_token VARCHAR(255),
+ADD COLUMN is_verified BOOLEAN DEFAULT FALSE,
+ADD COLUMN token_expiry DATETIME;
+
+INSERT INTO users (email, phone, password_hash, membership_tier, created_at, updated_at, verification_token, is_verified, token_expiry)
+VALUES
+('vipUser@example.com', '1234567890','$2a$10$YvTv2Z9f0DZM2zc7moYsKeEzZsj1USM2/lUKx6NCaLdjplDd88.bq', 'VIP', '2024-01-01 10:00:00', '2024-01-01 10:00:00', 'token123', TRUE, NULL);
+
 -- Vehicles table
 CREATE TABLE vehicles (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -27,6 +36,11 @@ CREATE TABLE vehicles (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+INSERT INTO vehicles (license_plate, model, charge_level, cleanliness, cost, location)
+VALUES
+('ABC1234', 'Tesla Model 3', 85.50, 'Clean', 20.00, 'Downtown'),
+('XYZ5678', 'Nissan Leaf', 60.25, 'Moderate', 10.00, 'Uptown');
+
 
 -- Reservations table
 CREATE TABLE reservations (
@@ -57,7 +71,3 @@ CREATE TABLE payments (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-
-ALTER TABLE users
-ADD COLUMN verification_token VARCHAR(255),
-ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;

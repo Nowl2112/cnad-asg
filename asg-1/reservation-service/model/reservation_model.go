@@ -27,8 +27,8 @@ type UpdateReservation struct{
 type EstimateRequest struct {
 	VehicleID int    `json:"vehicle_id"`
 	UserID    int    `json:"user_id"`
-	StartTime int64  `json:"start_time"`  // Unix timestamp for start time
-	EndTime   int64  `json:"end_time"`    // Unix timestamp for end time
+	StartTime int64  `json:"start_time"`  
+	EndTime   int64  `json:"end_time"`   
 }
 
 type EstimateResponse struct {

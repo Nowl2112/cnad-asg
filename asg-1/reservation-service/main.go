@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"reservation-service/handler"
 	"reservation-service/service"
-	"github.com/rs/cors" // Import this if using rs/cors
+	"github.com/rs/cors" 
 	"fmt"
 	"github.com/gorilla/mux"
 )
 
 func main() {
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"}, // Allow all origins (can be restricted to specific origins)
+		AllowedOrigins: []string{"*"}, 
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Content-Type", "Authorization"},
 	})

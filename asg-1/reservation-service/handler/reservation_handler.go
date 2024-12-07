@@ -174,11 +174,11 @@ func CalculateReservationCostHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Convert the Unix timestamp (int64) to time.Time using time.Unix
 	startTime := time.Unix(request.StartTime, 0)  // Convert Unix timestamp to time.Time
-	endTime := time.Unix(request.EndTime, 0)      // Convert Unix timestamp to time.Time
+	endTime := time.Unix(request.EndTime, 0)      
 
 	// Convert back the time.Time to Unix timestamp (int64)
 	startUnix := startTime.Unix()  // Get Unix timestamp in int64
-	endUnix := endTime.Unix()      // Get Unix timestamp in int64
+	endUnix := endTime.Unix()      
 
 	// Call the service to calculate the estimated cost with Unix timestamps
 	totalCost, err := service.CalculateEstimatedCost(request.VehicleID, request.UserID, startUnix, endUnix)

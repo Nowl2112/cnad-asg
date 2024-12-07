@@ -26,103 +26,98 @@
   </div>
 
   <script>
-    // Convert the local time (from the datetime-local input) to the required "YYYY-MM-DD HH:MM:SS" format
+    // Converts datetime-local string to a more readable format
     function convertToLocalFormat(dateTimeLocal) {
-      const localTime = new Date(dateTimeLocal);  // Create a Date object from the local time
+      const localTime = new Date(dateTimeLocal);  
 
-      // Get the individual components of the date and time
       const year = localTime.getFullYear();
-      const month = String(localTime.getMonth() + 1).padStart(2, '0');  // Add 1 to month as getMonth() is zero-indexed
+      const month = String(localTime.getMonth() + 1).padStart(2, '0');
       const day = String(localTime.getDate()).padStart(2, '0');
       const hours = String(localTime.getHours()).padStart(2, '0');
       const minutes = String(localTime.getMinutes()).padStart(2, '0');
       const seconds = String(localTime.getSeconds()).padStart(2, '0');
 
-      // Return the formatted string in "YYYY-MM-DD HH:MM:SS" format
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`; // Returns a formatted date string
     }
 
-    // Reserve vehicle function
+    // Redirects to reservation page with the selected vehicle and time details
     function reserveVehicle(vehicleId) {
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
 
+      // Check if both start and end times are provided
       if (!startTime || !endTime) {
         alert('Reservation times are missing. Please try again.');
         return;
       }
 
-      // Convert local times to "YYYY-MM-DD HH:MM:SS" format
       const startTimeFormatted = convertToLocalFormat(startTime);
       const endTimeFormatted = convertToLocalFormat(endTime);
 
-      // Redirect to the reservation page with necessary details in the URL
+      // Generate the URL with query parameters for the reservation page
       const url = `reservation.html?vehicleId=${vehicleId}&startTime=${encodeURIComponent(startTimeFormatted)}&endTime=${encodeURIComponent(endTimeFormatted)}`;
-      window.location.href = url;
+      window.location.href = url; // Redirect to the reservation page
     }
 
-    // Handle the form submission
     document.getElementById('reservationForm').addEventListener('submit', async function (e) {
-      e.preventDefault();
+      e.preventDefault(); // Prevent the default form submission
+
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
 
-      // Check if both start and end time are provided
+      // Check if both start time and end time are provided
       if (!startTime || !endTime) {
         alert('Both start time and end time are required!');
         return;
       }
 
-      // Convert local times to "YYYY-MM-DD HH:MM:SS" format
       const startTimeFormatted = convertToLocalFormat(startTime);
       const endTimeFormatted = convertToLocalFormat(endTime);
       
+      // Validate that the start time is before the end time
       if (new Date(startTimeFormatted) > new Date(endTimeFormatted)) {
-      alert('Start time cannot be after end time. Please check the dates and try again.');
-      return;
-    }
-      // Fetch available vehicles with the correct payload
+        alert('Start time cannot be after end time. Please check the dates and try again.');
+        return;
+      }
+
+      // Fetch available vehicles based on the provided time range
       const vehicles = await getAvailableVehicles(startTimeFormatted, endTimeFormatted);
-      displayVehicles(vehicles);
+      displayVehicles(vehicles); // Display the available vehicles
     });
 
-    // Get available vehicles from the backend
+    // Sends a POST request to fetch available vehicles for the selected time range
     function getAvailableVehicles(startTime, endTime) {
-      // Create an object to represent the time range in the correct format
       const timeRange = {
         start_time: startTime,
         end_time: endTime
       };
 
-      // Send a POST request with the time range as the JSON body
       return fetch('http://localhost:8081/vehicles/available', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(timeRange) // Send the time range as a JSON body
+        body: JSON.stringify(timeRange) // Send the time range in the request body
       })
-      .then(response => response.json())  // Parse the JSON response
+      .then(response => response.json()) 
       .then(vehicles => {
-        // Ensure vehicles is an array
         if (Array.isArray(vehicles)) {
-          return vehicles;
+          return vehicles; // Return the vehicles if the response is valid
         } else {
           console.error('Invalid response format:', vehicles);
           return []; // Return an empty array if the response is invalid
         }
       })
       .catch(error => {
-        // Handle any errors here
-        console.error('Error:', error);
-        return []; // Return an empty array in case of error
+        console.error('Error:', error); // Log any errors
+        return []; // Return an empty array on error
       });
     }
 
-    // Display the available vehicles
+    // Displays the list of available vehicles in the UI
     function displayVehicles(vehicles) {
       const vehicleList = document.getElementById('vehicleResults');
-      vehicleList.innerHTML = '';
+      vehicleList.innerHTML = ''; // Clear any previous results
 
       if (vehicles.length === 0) {
         vehicleList.innerHTML = '<li>No available vehicles found.</li>';
@@ -133,7 +128,7 @@
             Vehicle model: ${vehicle.model} - Plate Number: ${vehicle.license_plate} - Cost: $${vehicle.cost}
             <button onclick="reserveVehicle(${vehicle.id})">Reserve</button>
           `;
-          vehicleList.appendChild(listItem);
+          vehicleList.appendChild(listItem); // Append each vehicle to the list
         });
       }
     }

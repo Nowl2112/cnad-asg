@@ -43,7 +43,7 @@ func InitDB(dsn string) error {
 
 
 func init() {
-    stripeKey := os.Getenv("STRIPE_SECRET_KEY")
+    stripeKey := os.Getenv("STRIPE_API_KEY")
     if stripeKey == "" {
         log.Fatalf("Stripe secret key is not set in the environment variables")
     }

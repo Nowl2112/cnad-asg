@@ -22,20 +22,19 @@
 
   <script>
     // Function to convert Date to local ISO format "YYYY-MM-DDTHH:MM:SS" without changing to UTC
-function formatLocalTime(dateTimeLocal) {
-  const localTime = new Date(dateTimeLocal);
-  
-  // Manually construct the ISO format string based on local time
-  const year = localTime.getFullYear();
-  const month = String(localTime.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-  const day = String(localTime.getDate()).padStart(2, '0');
-  const hours = String(localTime.getHours()).padStart(2, '0');
-  const minutes = String(localTime.getMinutes()).padStart(2, '0');
-  const seconds = String(localTime.getSeconds()).padStart(2, '0');
-  
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`;
-}
-
+    function formatLocalTime(dateTimeLocal) {
+      const localTime = new Date(dateTimeLocal);
+      
+      // Manually construct the ISO format string based on local time
+      const year = localTime.getFullYear();
+      const month = String(localTime.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+      const day = String(localTime.getDate()).padStart(2, '0');
+      const hours = String(localTime.getHours()).padStart(2, '0');
+      const minutes = String(localTime.getMinutes()).padStart(2, '0');
+      const seconds = String(localTime.getSeconds()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`; // Return formatted local time
+    }
 
     document.addEventListener('DOMContentLoaded', async () => {
       // Extract URL parameters
@@ -63,16 +62,16 @@ function formatLocalTime(dateTimeLocal) {
       const vehicleIdInt = parseInt(vehicleId, 10); // Convert to integer
       const userIdInt = parseInt(userId, 10); // Convert to integer
 
-      // Fetch vehicle details
+      // Fetch vehicle details from backend API
       const vehicle = await fetch(`http://localhost:8081/vehicles/byID/${vehicleIdInt}`).then(res => res.json());
       document.getElementById('vehicleInfo').textContent = `Model: ${vehicle.model}, License Plate: ${vehicle.license_plate}`;
       document.getElementById('costPerHour').textContent = vehicle.cost;
 
       // Convert times to Unix timestamps for cost estimation
-      const startUnix = new Date(startTime).getTime() / 1000;
-      const endUnix = new Date(endTime).getTime() / 1000;
+      const startUnix = new Date(startTime).getTime() / 1000;  // Convert start time to Unix timestamp
+      const endUnix = new Date(endTime).getTime() / 1000;      // Convert end time to Unix timestamp
 
-      // Estimate total cost based on the reservation
+      // Estimate total cost by making a POST request to the server
       const totalCost = await fetch('http://localhost:8082/reservations/estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,21 +88,22 @@ function formatLocalTime(dateTimeLocal) {
 
       // Confirm reservation on button click
       document.getElementById('confirmReservation').addEventListener('click', async () => {
+        // Prepare the reservation payload
         const reservation = {
-      user_id: userIdInt,  
-      vehicle_id: vehicleIdInt,  
-      start_time: formattedStart, // Send as local time string
-      end_time: formattedEnd, // Send as local time string
-      total_price: totalCost.total_cost,  // Add total price to the payload
-      status: "active"  // Set status to "active"
-    };
+          user_id: userIdInt,  
+          vehicle_id: vehicleIdInt,  
+          start_time: formattedStart, // Send as local time string
+          end_time: formattedEnd, // Send as local time string
+          total_price: totalCost.total_cost,  // Add total price to the payload
+          status: "active"  // Set status to "active"
+        };
 
+        // Send reservation request to backend API
         await fetch('http://localhost:8082/reservations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(reservation)
         });
-
       });
     });
   </script>

@@ -44,7 +44,7 @@ func RegisterUser(user model.User) (model.User, error) {
 		return user, fmt.Errorf("failed to generate verification token: %v", err)
 	}
 
-	expiry := time.Now().Add(24 * time.Hour) // Token valid for 24 hours
+	expiry := time.Now().Add(24 * time.Hour) 
 
 	query := `INSERT INTO users (email, password_hash, phone, membership_tier, verification_token, token_expiry)
 	          VALUES (?, ?, ?, ?, ?, ?)`
@@ -93,7 +93,7 @@ func Login(email, password string) (bool, model.User, error) {
 		return false, user, fmt.Errorf("invalid email or password")
 	}
 
-	return true, user, nil  // Return the user details
+	return true, user, nil 
 }
 
 // Update user
@@ -169,8 +169,8 @@ func sendVerificationEmail(email, token string) {
 	// Configure your SMTP settings
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
-	username := "kotaro.da.kat@gmail.com" // Your Gmail address
-	password := "mkin ajob zriq oifi"      // Your App Password (NOT your Gmail account password)
+	username := "kotaro.da.kat@gmail.com"
+	password := "mkin ajob zriq oifi"      
 
 	// Create the email message
 	from := username // Use the authenticated username as the sender

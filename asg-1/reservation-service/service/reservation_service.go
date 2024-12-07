@@ -65,7 +65,7 @@ func AddReservation(reservation *model.Reservation) error {
         return fmt.Errorf("The vehicle is not available for the requested time slot")
     }
 
-    // Calculate the total price (hours difference * vehicle hourly cost)
+    // Calculate the total price 
     var vehicleCost float64
     err = db.QueryRow("SELECT cost FROM vehicles WHERE id = ?", reservation.VehicleID).Scan(&vehicleCost)
     if err != nil {
@@ -74,7 +74,7 @@ func AddReservation(reservation *model.Reservation) error {
 
     duration := reservation.EndTime.Sub(reservation.StartTime).Hours()
 
-    // Fetch the user's membership tier
+    // Fetch the user membership tier
     var membershipTier string
     query := "SELECT membership_tier FROM users WHERE id = ?"
     err = db.QueryRow(query, reservation.UserID).Scan(&membershipTier)
@@ -87,12 +87,11 @@ func AddReservation(reservation *model.Reservation) error {
     var totalCost float64
     switch membershipTier {
     case "Basic":
-        // No discount
         totalCost = duration * vehicleCost
     case "Premium":
-        totalCost = duration * vehicleCost * 0.90 // 10% discount
+        totalCost = duration * vehicleCost * 0.90 
     case "VIP":
-        totalCost = duration * vehicleCost * 0.75 // 25% discount
+        totalCost = duration * vehicleCost * 0.75 
     default:
         return fmt.Errorf("Unknown membership tier: %s", membershipTier)
     }

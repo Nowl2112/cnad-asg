@@ -35,7 +35,7 @@ func AddVehicle(w http.ResponseWriter, r *http.Request) {
 func GetVehicle(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	idStr := params["id"]
-	id, err := strconv.Atoi(idStr) // Convert id from string to int
+	id, err := strconv.Atoi(idStr) 
 	if err != nil {
 		http.Error(w, "Invalid vehicle ID", http.StatusBadRequest)
 		return
@@ -55,7 +55,7 @@ func GetVehicle(w http.ResponseWriter, r *http.Request) {
 func UpdateVehicle(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	idStr := params["id"]
-	id, err := strconv.Atoi(idStr) // Convert id from string to int
+	id, err := strconv.Atoi(idStr) 
 	if err != nil {
 		http.Error(w, "Invalid vehicle ID", http.StatusBadRequest)
 		return
@@ -81,7 +81,7 @@ func UpdateVehicle(w http.ResponseWriter, r *http.Request) {
 func DeleteVehicle(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	idStr := params["id"]
-	id, err := strconv.Atoi(idStr) // Convert id from string to int
+	id, err := strconv.Atoi(idStr) 
 	if err != nil {
 		http.Error(w, "Invalid vehicle ID", http.StatusBadRequest)
 		return

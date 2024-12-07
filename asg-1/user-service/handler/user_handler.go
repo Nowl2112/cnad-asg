@@ -32,7 +32,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	idStr := params["id"]
-	id, err := strconv.Atoi(idStr) // Convert string ID to int
+	id, err := strconv.Atoi(idStr) 
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
@@ -69,7 +69,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Login successful",
-		"user_id": user.ID,  // Return the user_id to store in the frontend
+		"user_id": user.ID, 
 	})
 }
 
@@ -78,7 +78,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	idStr := params["id"]
-	id, err := strconv.Atoi(idStr) // Convert string ID to int
+	id, err := strconv.Atoi(idStr) 
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
@@ -102,7 +102,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 func GetRentalHistoryHandler(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    userID, err := strconv.Atoi(params["id"]) // Use mux.Vars
+    userID, err := strconv.Atoi(params["id"])
     if err != nil {
         http.Error(w, "Invalid user ID", http.StatusBadRequest)
         return
