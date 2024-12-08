@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	SMTPHost     = "smtp.gmail.com" // Use your email provider's SMTP server
-	SMTPPort     = 587             // SMTP port
+	SMTPHost     = "smtp.gmail.com" 
+	SMTPPort     = 587            
 	SMTPUsername = "kotaro.da.kat@gmail.com"
-	SMTPPassword = "mkin ajob zriq oifi" // Use an app-specific password if using Gmail
+	SMTPPassword = "mkin ajob zriq oifi" 
 )
 type Item struct {
 	ID     string `json:"id"`
